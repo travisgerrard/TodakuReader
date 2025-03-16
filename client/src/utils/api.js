@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Define the base API URL with fallback to local development server
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://todakureader.com/api';
 
 // Create an axios instance with default config
 const api = axios.create({

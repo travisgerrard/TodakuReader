@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { GoogleLogin } from '@react-oauth/google';
 import { AuthContext } from '../context/AuthContext';
 import Container from '../components/layout/Container';
 
@@ -77,17 +76,6 @@ const Button = styled.button`
   }
 `;
 
-const GoogleLoginWrapper = styled.div`
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  max-width: 240px;
-  margin: 0 auto;
-  
-  /* Remove previous custom styling that might be causing issues */
-  /* Instead, let the GoogleLogin component handle its own styling */
-`;
-
 const ErrorMessage = styled.div`
   color: ${({ theme }) => theme.error};
   background-color: ${({ theme }) => theme.errorLight || '#ffebee'};
@@ -118,10 +106,9 @@ const DebugTitle = styled.h3`
 `;
 
 const LoginPage = () => {
-  const { isAuthenticated, loginWithGoogle, error, isLoading, debug, clearError } = useContext(AuthContext);
+  const { isAuthenticated, error, isLoading, debug, clearError } = useContext(AuthContext);
   const navigate = useNavigate();
   const [showDebug, setShowDebug] = useState(false);
-  const [googleButtonFailed, setGoogleButtonFailed] = useState(false);
   
   // Redirect if already authenticated
   useEffect(() => {
@@ -145,26 +132,10 @@ const LoginPage = () => {
     }
   }, []);
   
-  const handleGoogleSuccess = (credentialResponse) => {
-    console.log('Google login success:', credentialResponse);
-    loginWithGoogle(credentialResponse.credential);
+  // Function to handle server-side Google login
+  const handleServerSideGoogleLogin = () => {
+    window.location.href = `${process.env.REACT_APP_API_URL || 'https://todakureader.com/api'}/auth/google/redirect`;
   };
-  
-  const handleGoogleError = (error) => {
-    console.error('Google login failed:', error);
-  };
-  
-  useEffect(() => {
-    // Check if Google button rendered correctly after a short delay
-    const timer = setTimeout(() => {
-      const googleButton = document.querySelector('[aria-labelledby="button-label"]');
-      if (!googleButton) {
-        setGoogleButtonFailed(true);
-      }
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, []);
   
   return (
     <Container>
@@ -184,45 +155,29 @@ const LoginPage = () => {
         )}
         
         <LoginOptions>
-          <GoogleLoginWrapper>
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-              useOneTap
-              type="standard"
-              logo_alignment="center"
-              shape="rectangular"
-              size="large"
-              width="100%"
-              style={{ width: '100%', maxWidth: '240px', minHeight: '40px' }}
-            />
-          </GoogleLoginWrapper>
-          
-          {googleButtonFailed && (
-            <div style={{ marginTop: '1rem', width: '100%', maxWidth: '240px' }}>
-              <Button 
-                onClick={() => window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/auth/google/redirect`}
-                style={{ 
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  backgroundColor: '#fff',
-                  color: '#757575',
-                  border: '1px solid #757575',
-                  padding: '10px 15px',
-                  borderRadius: '4px'
-                }}
-              >
-                <img 
-                  src="https://developers.google.com/identity/images/g-logo.png" 
-                  alt="Google logo" 
-                  style={{ width: '18px', height: '18px' }} 
-                />
-                Sign in with Google
-              </Button>
-            </div>
-          )}
+          <div style={{ marginTop: '1rem', width: '100%', maxWidth: '240px' }}>
+            <Button 
+              onClick={handleServerSideGoogleLogin}
+              style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                backgroundColor: '#fff',
+                color: '#757575',
+                border: '1px solid #757575',
+                padding: '10px 15px',
+                borderRadius: '4px'
+              }}
+            >
+              <img 
+                src="https://developers.google.com/identity/images/g-logo.png" 
+                alt="Google logo" 
+                style={{ width: '18px', height: '18px' }} 
+              />
+              Sign in with Google
+            </Button>
+          </div>
         </LoginOptions>
         
         {isLoading && <p>Logging in...</p>}

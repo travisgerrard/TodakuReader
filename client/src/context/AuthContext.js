@@ -4,7 +4,7 @@ import { jwtDecode } from 'jwt-decode';
 import api from '../utils/api';
 
 // Configure axios with base URL
-const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+const apiUrl = process.env.REACT_APP_API_URL || 'https://todakureader.com/api';
 axios.defaults.baseURL = apiUrl;
 
 // Create auth context
