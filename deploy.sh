@@ -32,6 +32,11 @@ cp package-lock.json deploy/
 cp $SERVER_ENV_FILE deploy/.env
 cp -r client/build deploy/client-build
 
+# Make sure to include the data directory for fallback mechanism
+echo "Including fallback data files..."
+mkdir -p deploy/client-build/data
+cp -r client/src/data/* deploy/client-build/data/
+
 # Create a production pm2 config file
 cat > deploy/ecosystem.config.js << EOL
 module.exports = {
@@ -89,6 +94,17 @@ ssh $SERVER_USER@$SERVER_IP << EOF
   # Save PM2 configuration to survive server restarts
   pm2 save
 
+  # Run verification scripts to check content accessibility
+  echo "Verifying content accessibility..."
+  cd $SERVER_DIR/client-build
+  if [ -f "node_modules/.bin/react-scripts" ]; then
+    npm run check-stories-access
+    npm run check-grammar
+  else
+    echo "Verification scripts not available in production build. This is normal."
+    echo "You can manually check accessibility by visiting the site."
+  fi
+
   # Clean up
   rm /tmp/deploy.tar.gz
 EOF
@@ -98,4 +114,7 @@ rm deploy.tar.gz
 
 echo "Deployment completed successfully!"
 echo "Your application should now be running at http://$SERVER_IP:5001"
-echo "You might want to set up a reverse proxy with Nginx or Apache to serve it on port 80/443." 
+echo "You might want to set up a reverse proxy with Nginx or Apache to serve it on port 80/443."
+echo ""
+echo "Note: The application now includes a fallback mechanism that ensures content is always"
+echo "available to users, even during server outages or API failures." 

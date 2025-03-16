@@ -147,6 +147,39 @@ The `deploy.sh` script automates most of the steps above:
    ./deploy.sh
    ```
 
+## Fallback Mechanism Setup
+
+TodakuReader now includes a robust fallback mechanism that ensures content (Grammar, Vocabulary, and Stories) is always available to users, even during server outages or API failures.
+
+### Key Fallback Features:
+
+1. **Mock Data Files**: The application comes with pre-configured mock data files:
+   - `/client/src/data/mockStories.json`: Contains Japanese stories for offline usage
+   - Other mock data in `/client/src/utils/mockData.js`
+
+2. **Automatic Switching**: When the server is unreachable, the application automatically switches to displaying mock data.
+
+3. **Custom Verification Scripts**:
+   - `npm run check-stories-access`: Verifies that non-authenticated users can access stories
+   - `npm run check-grammar`: Validates grammar point access
+   - `npm run check-vocabulary`: Checks vocabulary item access
+
+### Setting Up Fallback Data:
+
+To customize the fallback data:
+
+1. Edit the JSON files in `/client/src/data/` directory
+2. For stories, edit `mockStories.json` to include your own fallback content
+3. Make sure to maintain the same data structure
+
+```bash
+# Run verification scripts after deployment:
+cd /var/www/todakureader/client
+npm run check-stories-access
+npm run check-grammar
+npm run check-vocabulary
+```
+
 ## Troubleshooting
 
 1. **Application not starting:**
@@ -158,7 +191,12 @@ The `deploy.sh` script automates most of the steps above:
    - Check database user: `sudo -u postgres psql -c "\du"`
    - Verify connection settings in .env file
 
-3. **Nginx/Apache problems:**
+3. **Content not loading for non-authenticated users:**
+   - Check that fallback mechanism is working: `npm run check-stories-access`
+   - Verify mock data files exist and are properly formatted
+   - Check browser console for errors
+
+4. **Nginx/Apache problems:**
    - Check server status: `sudo systemctl status nginx`
    - Check error logs: `sudo tail -f /var/log/nginx/error.log`
 
