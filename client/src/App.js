@@ -20,6 +20,7 @@ import StoryGenerator from './pages/StoryGenerator';
 import StoryReader from './pages/StoryReader';
 import VocabularyBrowser from './pages/VocabularyBrowser';
 import GrammarBrowser from './pages/GrammarBrowser';
+import AuthCallback from './pages/AuthCallback';
 
 function App() {
   const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
@@ -62,6 +63,7 @@ function App() {
               <Route path="/stories/:id" element={<StoryReader />} />
               <Route path="/vocabulary" element={<VocabularyBrowser />} />
               <Route path="/grammar" element={<GrammarBrowser />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
             </Routes>
             <Footer />
           </Router>

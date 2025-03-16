@@ -31,8 +31,10 @@
     "check-grammar": "node src/scripts/check-grammar.js",
     "check-vocabulary": "node src/scripts/check-vocabulary.js",
     "check-stories-access": "node src/scripts/check-stories-access.js",
+    "check-auth": "node src/scripts/check-auth.js",
     "test:stories-access": "react-scripts test --testPathPattern=Stories.test.js --watchAll=false",
-    "test:all": "npm run test -- --watchAll=false && npm run check-stories-access",
+    "test:auth": "react-scripts test --testPathPattern=src/pages/__tests__/Auth.test.js --watchAll=false",
+    "test:all": "npm run test -- --watchAll=false && npm run check-stories-access && npm run test:auth && npm run check-auth",
     "test:ci": "npm run test:all"
   },
   "eslintConfig": {

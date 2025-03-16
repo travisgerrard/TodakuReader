@@ -50,65 +50,9 @@ const Description = styled.p`
 const LoginOptions = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
   align-items: center;
-  
-  @media (max-width: 480px) {
-    gap: 1.25rem;
-  }
-`;
-
-const Divider = styled.div`
-  display: flex;
-  align-items: center;
-  margin: 1.5rem 0;
   width: 100%;
-  
-  &::before, &::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid ${({ theme }) => theme.border};
-  }
-  
-  span {
-    padding: 0 1rem;
-    color: ${({ theme }) => theme.textSecondary};
-    font-size: 0.9rem;
-  }
-  
-  @media (max-width: 480px) {
-    margin: 1.25rem 0;
-  }
-`;
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-`;
-
-const FormGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const Label = styled.label`
-  color: ${({ theme }) => theme.text};
-  font-size: 0.9rem;
-`;
-
-const Input = styled.input`
-  padding: 0.75rem;
-  border: 1px solid ${({ theme }) => theme.border};
-  border-radius: 4px;
-  font-size: 1rem;
-  width: 100%;
-  
-  @media (max-width: 480px) {
-    padding: 0.7rem;
-  }
+  margin: 1rem 0;
 `;
 
 const Button = styled.button`
@@ -137,17 +81,11 @@ const GoogleLoginWrapper = styled.div`
   display: flex;
   justify-content: center;
   width: 100%;
+  max-width: 240px;
+  margin: 0 auto;
   
-  /* Custom styling for Google button to ensure it's responsive */
-  div {
-    width: 100% !important;
-  }
-  
-  button {
-    width: 100% !important;
-    border-radius: 4px !important;
-    min-height: 44px !important; /* Better touch target */
-  }
+  /* Remove previous custom styling that might be causing issues */
+  /* Instead, let the GoogleLogin component handle its own styling */
 `;
 
 const ErrorMessage = styled.div`
@@ -183,6 +121,7 @@ const LoginPage = () => {
   const { isAuthenticated, loginWithGoogle, error, isLoading, debug, clearError } = useContext(AuthContext);
   const navigate = useNavigate();
   const [showDebug, setShowDebug] = useState(false);
+  const [googleButtonFailed, setGoogleButtonFailed] = useState(false);
   
   // Redirect if already authenticated
   useEffect(() => {
@@ -190,6 +129,21 @@ const LoginPage = () => {
       navigate('/profile');
     }
   }, [isAuthenticated, navigate]);
+  
+  // Inside the LoginPage component, after the useEffect for isAuthenticated
+  // Add this useEffect to handle error parameters
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const errorParam = params.get('error');
+    
+    if (errorParam === 'auth_failed') {
+      console.error('Google authentication failed');
+      // You can set your own error message here if needed
+    } else if (errorParam === 'no_token') {
+      console.error('No authentication token received');
+      // You can set your own error message here if needed
+    }
+  }, []);
   
   const handleGoogleSuccess = (credentialResponse) => {
     console.log('Google login success:', credentialResponse);
@@ -200,18 +154,24 @@ const LoginPage = () => {
     console.error('Google login failed:', error);
   };
   
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // This is just a placeholder for email/password login
-    console.log('Form submitted');
-  };
+  useEffect(() => {
+    // Check if Google button rendered correctly after a short delay
+    const timer = setTimeout(() => {
+      const googleButton = document.querySelector('[aria-labelledby="button-label"]');
+      if (!googleButton) {
+        setGoogleButtonFailed(true);
+      }
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   return (
     <Container>
       <LoginContainer>
         <Title>Welcome to Todaku</Title>
         <Description>
-          Log in to access personalized Japanese learning content and track your progress.
+          Log in with Google to access personalized Japanese learning content and track your progress.
         </Description>
         
         {error && (
@@ -229,36 +189,45 @@ const LoginPage = () => {
               onSuccess={handleGoogleSuccess}
               onError={handleGoogleError}
               useOneTap
-              theme="filled_blue"
-              text="continue_with"
-              shape="pill"
-              locale="en"
+              type="standard"
+              logo_alignment="center"
+              shape="rectangular"
+              size="large"
               width="100%"
+              style={{ width: '100%', maxWidth: '240px', minHeight: '40px' }}
             />
           </GoogleLoginWrapper>
+          
+          {googleButtonFailed && (
+            <div style={{ marginTop: '1rem', width: '100%', maxWidth: '240px' }}>
+              <Button 
+                onClick={() => window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/auth/google/redirect`}
+                style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  backgroundColor: '#fff',
+                  color: '#757575',
+                  border: '1px solid #757575',
+                  padding: '10px 15px',
+                  borderRadius: '4px'
+                }}
+              >
+                <img 
+                  src="https://developers.google.com/identity/images/g-logo.png" 
+                  alt="Google logo" 
+                  style={{ width: '18px', height: '18px' }} 
+                />
+                Sign in with Google
+              </Button>
+            </div>
+          )}
         </LoginOptions>
-        
-        <Divider>
-          <span>OR</span>
-        </Divider>
-        
-        <Form onSubmit={handleSubmit}>
-          <FormGroup>
-            <Label htmlFor="email">Email</Label>
-            <Input type="email" id="email" name="email" placeholder="Enter your email" required />
-          </FormGroup>
-          
-          <FormGroup>
-            <Label htmlFor="password">Password</Label>
-            <Input type="password" id="password" name="password" placeholder="Enter your password" required />
-          </FormGroup>
-          
-          <Button type="submit">Log in with Email</Button>
-        </Form>
         
         {isLoading && <p>Logging in...</p>}
         
-        <p>
+        <p style={{ marginTop: '1.5rem', textAlign: 'center' }}>
           By logging in, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.
         </p>
         

@@ -20,6 +20,8 @@ api.interceptors.request.use(
     
     // If token exists, add it to the headers
     if (token) {
+      // Send token in both formats to ensure compatibility
+      config.headers['x-auth-token'] = token;
       config.headers['Authorization'] = `Bearer ${token}`;
     }
     

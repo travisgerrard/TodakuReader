@@ -103,4 +103,96 @@ router.get('/user', auth, async (req, res) => {
   }
 });
 
+// @route   GET api/auth/google/redirect
+// @desc    Redirect to Google OAuth login page
+// @access  Public
+router.get('/google/redirect', (req, res) => {
+  const googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
+  const redirectUri = `${process.env.API_URL || 'http://localhost:5001'}/api/auth/google/callback`;
+  
+  const options = {
+    redirect_uri: redirectUri,
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    access_type: 'offline',
+    response_type: 'code',
+    prompt: 'consent',
+    scope: [
+      'https://www.googleapis.com/auth/userinfo.profile',
+      'https://www.googleapis.com/auth/userinfo.email'
+    ].join(' ')
+  };
+  
+  const qs = new URLSearchParams(options);
+  res.redirect(`${googleAuthUrl}?${qs.toString()}`);
+});
+
+// @route   GET api/auth/google/callback
+// @desc    Handle Google OAuth callback
+// @access  Public
+router.get('/google/callback', async (req, res) => {
+  const code = req.query.code;
+  
+  try {
+    // Exchange code for tokens
+    const { tokens } = await client.getToken({
+      code,
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: `${process.env.API_URL || 'http://localhost:5001'}/api/auth/google/callback`
+    });
+    
+    // Verify ID token
+    const ticket = await client.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+    
+    const payload = ticket.getPayload();
+    const { sub: googleId, email } = payload;
+    
+    // Check if user exists in database
+    const userResult = await db.query(
+      'SELECT * FROM users WHERE google_id = $1',
+      [googleId]
+    );
+    
+    let userId;
+    
+    if (userResult.rows.length === 0) {
+      // Create new user
+      const newUserResult = await db.query(
+        'INSERT INTO users (google_id, email) VALUES ($1, $2) RETURNING id',
+        [googleId, email]
+      );
+      userId = newUserResult.rows[0].id;
+    } else {
+      // User exists
+      userId = userResult.rows[0].id;
+    }
+    
+    // Create JWT payload
+    const jwtPayload = {
+      user: {
+        id: userId
+      }
+    };
+    
+    // Sign JWT token
+    const token = jwt.sign(
+      jwtPayload,
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+    
+    // Redirect to frontend with token
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    res.redirect(`${clientUrl}/auth/callback?token=${token}`);
+    
+  } catch (err) {
+    console.error('Google OAuth callback error:', err);
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    res.redirect(`${clientUrl}/login?error=auth_failed`);
+  }
+});
+
 module.exports = router; 
