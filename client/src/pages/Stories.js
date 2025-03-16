@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import Container from '../components/layout/Container';
 import { AuthContext } from '../context/AuthContext';
 import api from '../utils/api';
+import { getMockStoriesData } from '../utils/mockData';
 
 const PageHeader = styled.div`
   margin-bottom: 2rem;
@@ -12,6 +13,55 @@ const PageHeader = styled.div`
 const Title = styled.h1`
   color: ${({ theme }) => theme.primary};
   margin-bottom: 1rem;
+`;
+
+const WelcomeMessage = styled.div`
+  background-color: ${({ theme }) => theme.surface};
+  padding: 1.25rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px ${({ theme }) => theme.shadow};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+`;
+
+const WelcomeText = styled.div`
+  flex: 1;
+  min-width: 250px;
+  
+  h3 {
+    color: ${({ theme }) => theme.primary};
+    margin-bottom: 0.5rem;
+  }
+  
+  p {
+    color: ${({ theme }) => theme.textSecondary};
+    margin-bottom: 0;
+  }
+`;
+
+const ActionButton = styled(Link)`
+  background-color: ${({ theme }) => theme.primary};
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: bold;
+  display: inline-block;
+  
+  &:hover {
+    background-color: ${({ theme }) => theme.primary}DD;
+    text-decoration: none;
+    color: white;
+  }
 `;
 
 const FiltersContainer = styled.div`
@@ -228,6 +278,9 @@ const Stories = () => {
     offset: 0
   });
   
+  // Add state for fallback mode
+  const [usingFallbackData, setUsingFallbackData] = useState(false);
+  
   // State for filters
   const [filters, setFilters] = useState({
     tadoku_level: '',
@@ -258,15 +311,52 @@ const Stories = () => {
     
     try {
       const res = await api.get(`/stories?${params.toString()}`);
-      setStories(res.data.stories);
-      setTotalStories(res.data.pagination.total);
+      
+      if (res.data && Array.isArray(res.data.stories)) {
+        // Reset fallback mode if we get real data
+        setUsingFallbackData(false);
+        setStories(res.data.stories);
+        setTotalStories(res.data.pagination?.total || res.data.stories.length);
+      } else {
+        console.error('Unexpected API response format:', res.data);
+        // Use fallback data
+        loadFallbackData();
+      }
     } catch (err) {
       console.error('Error fetching stories:', err);
-      setError('Failed to load stories. Please try again later.');
+      // Use fallback data
+      loadFallbackData();
     } finally {
       setLoading(false);
     }
   }, [filters, pagination.limit, pagination.offset]);
+  
+  // Load fallback mock data
+  const loadFallbackData = useCallback(async () => {
+    try {
+      // Pass all filters to the mock data function
+      const mockData = await getMockStoriesData({
+        limit: pagination.limit,
+        offset: pagination.offset,
+        tadoku_level: filters.tadoku_level,
+        wanikani_level: filters.wanikani_level,
+        genki_chapter: filters.genki_chapter,
+        length: filters.length,
+        topic: filters.topic,
+        search: filters.search
+      });
+      
+      setUsingFallbackData(true);
+      setStories(mockData.stories);
+      setTotalStories(mockData.pagination.total);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading fallback data:', err);
+      setError('Failed to load stories. Please try again later.');
+      setStories([]);
+      setTotalStories(0);
+    }
+  }, [pagination.limit, pagination.offset, filters]);
   
   // Fetch stories when component mounts or when filters/pagination change
   useEffect(() => {
@@ -352,11 +442,25 @@ const Stories = () => {
       <PageHeader>
         <Title>Browse Japanese Stories</Title>
         
-        {isAuthenticated && (
-          <CreateButton to="/stories/new">
-            Create a New Story
-          </CreateButton>
-        )}
+        <WelcomeMessage>
+          <WelcomeText>
+            <h3>{isAuthenticated ? `Welcome back, ${user?.name || 'Reader'}!` : 'Welcome to Todaku Reader!'}</h3>
+            <p>
+              {isAuthenticated 
+                ? 'Continue your Japanese reading journey with our collection of stories.'
+                : 'Explore our collection of Japanese stories to improve your reading skills. All stories are freely accessible!'}
+            </p>
+            {usingFallbackData && (
+              <p style={{ color: '#ff9800', marginTop: '0.5rem' }}>
+                <strong>Note:</strong> Currently showing offline stories. Some features may be limited.
+              </p>
+            )}
+          </WelcomeText>
+          
+          {isAuthenticated && (
+            <ActionButton to="/stories/new">Create New Story</ActionButton>
+          )}
+        </WelcomeMessage>
       </PageHeader>
       
       <FiltersContainer>
@@ -372,11 +476,10 @@ const Stories = () => {
               onChange={handleFilterChange}
             >
               <option value="">Any Level</option>
-              <option value="0">Level 0 (Complete Beginner)</option>
-              <option value="1">Level 1 (Basic Hiragana/Katakana)</option>
-              <option value="2">Level 2 (Basic Kanji/Grammar)</option>
-              <option value="3">Level 3 (Intermediate)</option>
-              <option value="4">Level 4 (Advanced Intermediate)</option>
+              <option value="1">Level 1 (Beginner)</option>
+              <option value="2">Level 2</option>
+              <option value="3">Level 3</option>
+              <option value="4">Level 4</option>
               <option value="5">Level 5 (Advanced)</option>
             </Select>
           </FilterGroup>
@@ -438,32 +541,28 @@ const Stories = () => {
         </FiltersGrid>
         
         <ButtonGroup>
-          <ClearButton onClick={handleResetFilters}>
-            Reset Filters
-          </ClearButton>
-          
-          {isAuthenticated && (
-            <Button onClick={() => {
-              if (user) {
-                setFilters(prev => ({
-                  ...prev,
-                  wanikani_level: user.wanikani_level || '',
-                  genki_chapter: user.genki_chapter || ''
-                }));
-              }
-            }}>
-              Match My Level
-            </Button>
-          )}
+          <Button onClick={fetchStories}>Apply Filters</Button>
+          <ClearButton onClick={handleResetFilters}>Clear Filters</ClearButton>
         </ButtonGroup>
       </FiltersContainer>
       
       {loading ? (
         <LoadingIndicator>Loading stories...</LoadingIndicator>
+      ) : error ? (
+        <NoResults>
+          <h3>Error Loading Stories</h3>
+          <p>{error}</p>
+          <p>Please try refreshing the page or check your connection.</p>
+        </NoResults>
       ) : stories.length === 0 ? (
         <NoResults>
           <h3>No stories found</h3>
-          <p>Try changing your filters or create a new story.</p>
+          <p>Try adjusting your filters or check back later for new content.</p>
+          {isAuthenticated && (
+            <p>
+              <Link to="/stories/new">Create a new story</Link> to contribute to our collection!
+            </p>
+          )}
         </NoResults>
       ) : (
         <>

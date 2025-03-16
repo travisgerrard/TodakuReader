@@ -36,6 +36,7 @@ const SearchForm = styled.form`
   
   @media (max-width: 768px) {
     flex-direction: column;
+    gap: 0.75rem;
   }
 `;
 
@@ -45,6 +46,10 @@ const Input = styled.input`
   border: 1px solid ${({ theme }) => theme.border};
   border-radius: 4px;
   font-size: 1rem;
+  
+  @media (max-width: 480px) {
+    width: 100%;
+  }
 `;
 
 const Select = styled.select`
@@ -97,9 +102,15 @@ const FiltersRow = styled.div`
   display: flex;
   gap: 1rem;
   margin-top: 1rem;
+  flex-wrap: wrap;
   
   @media (max-width: 768px) {
-    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: flex-start;
   }
 `;
 
@@ -107,6 +118,10 @@ const FilterGroup = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  
+  @media (max-width: 480px) {
+    width: 100%;
+  }
 `;
 
 const FilterLabel = styled.label`
@@ -125,6 +140,14 @@ const GrammarCard = styled.div`
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 2px 4px ${({ theme }) => theme.shadow};
+  
+  @media (max-width: 768px) {
+    padding: 1.25rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 1rem;
+  }
 `;
 
 const GrammarTitle = styled.h3`
@@ -134,6 +157,16 @@ const GrammarTitle = styled.h3`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  
+  @media (max-width: 768px) {
+    font-size: 1.35rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1.25rem;
+  }
 `;
 
 const GrammarLevel = styled.span`
@@ -205,25 +238,31 @@ const NoResults = styled.div`
 const Pagination = styled.div`
   display: flex;
   justify-content: center;
+  align-items: center;
   margin-top: 2rem;
+  flex-wrap: wrap;
   gap: 0.5rem;
 `;
 
 const PageButton = styled.button`
-  background-color: ${({ active, theme }) => active === 'true' ? theme.primary : theme.background};
-  color: ${({ active, theme }) => active === 'true' ? 'white' : theme.text};
-  border: 1px solid ${({ active, theme }) => active === 'true' ? theme.primary : theme.border};
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 4px;
-  padding: 0.5rem 0.75rem;
+  background-color: ${({ active, theme }) => active ? theme.primary : theme.surface};
+  color: ${({ active, theme }) => active ? 'white' : theme.text};
+  font-weight: ${({ active }) => active ? 'bold' : 'normal'};
   cursor: pointer;
   
   &:hover {
-    background-color: ${({ active, theme }) => active === 'true' ? theme.primary : theme.surface};
+    background-color: ${({ active, theme }) => active ? theme.primary : theme.primaryLight};
   }
   
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  @media (max-width: 480px) {
+    width: 36px;
+    height: 36px;
   }
 `;
 
@@ -256,26 +295,47 @@ const RetryButton = styled.button`
 `;
 
 const OfflineModeToggle = styled.div`
-  margin-top: 1rem;
   display: flex;
   align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: ${({ theme }) => theme.surface};
+  border-radius: 8px;
   
-  label {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    color: ${({ theme }) => theme.textSecondary};
-    font-size: 0.9rem;
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
+`;
+
+const ToggleLabel = styled.span`
+  color: ${({ theme }) => theme.text};
+  font-weight: 500;
+`;
+
+const ToggleSwitch = styled.label`
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
   
-  input {
-    margin-right: 0.5rem;
+  @media (max-width: 480px) {
+    width: 50px;
+    height: 28px;
   }
 `;
 
 const ButtonGroup = styled.div`
   display: flex;
   gap: 1rem;
+  margin-top: 1rem;
+  
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
 `;
 
 const OfflineButton = styled(RetryButton)`

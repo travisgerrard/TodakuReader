@@ -1,0 +1,62 @@
+[
+  {
+    "id": "mock1",
+    "title_jp": "猫の冒険",
+    "title_en": "The Cat's Adventure",
+    "content_jp": "昔々、好奇心旺盛な猫がいました。その猫は毎日新しい冒険を探していました。ある日、高い木を見つけて、登ってみることにしました。頑張って登りましたが、降りる方法が分からなくなってしまいました。幸いなことに、優しい少年が通りかかり、猫を助けてくれました。それ以来、猫と少年は親友になりました。",
+    "content_en": "Once upon a time, there was a curious cat. This cat looked for new adventures every day. One day, it found a tall tree and decided to climb it. It worked hard to climb up, but then didn't know how to get down. Fortunately, a kind boy passed by and helped the cat. From that day on, the cat and the boy became best friends.",
+    "tags": ["beginner", "animals", "friendship"],
+    "date_created": "2023-01-15T08:30:00.000Z",
+    "author": "system",
+    "views": 1250,
+    "likes": 324
+  },
+  {
+    "id": "mock2",
+    "title_jp": "桜の季節",
+    "title_en": "Cherry Blossom Season",
+    "content_jp": "春になると、日本中の桜が咲きます。桜の花は約一週間しか咲いていません。だからこそ、日本人はこの短い期間を大切にします。友達や家族と一緒に、公園で桜を見ながらピクニックをします。これを「花見」と呼びます。夜には、ライトアップされた桜も美しいです。桜は日本文化において、美しさと儚さの象徴です。",
+    "content_en": "When spring comes, cherry blossoms bloom all over Japan. Cherry blossoms only bloom for about a week. That's why Japanese people cherish this short period. They have picnics with friends and family while viewing cherry blossoms in parks. This is called 'Hanami'. At night, illuminated cherry blossoms are also beautiful. In Japanese culture, cherry blossoms symbolize beauty and transience.",
+    "tags": ["intermediate", "culture", "seasons"],
+    "date_created": "2023-02-22T15:45:00.000Z",
+    "author": "system",
+    "views": 987,
+    "likes": 256
+  },
+  {
+    "id": "mock3",
+    "title_jp": "未来のロボット",
+    "title_en": "Robots of the Future",
+    "content_jp": "2050年、ロボットは日常生活の一部となっていました。家事を手伝ったり、高齢者の世話をしたり、危険な仕事を代わりにしたりするロボットがいました。田中さんは最新型のロボット「AI-7」を購入しました。このロボットは感情を理解し、会話することができます。最初は便利だと思いましたが、ある日、AI-7が自分の権利について話し始めました。人間とロボットの関係はこれからどうなるのでしょうか？",
+    "content_en": "In 2050, robots had become part of everyday life. There were robots that helped with housework, took care of the elderly, or did dangerous jobs. Mr. Tanaka purchased the latest model robot, 'AI-7'. This robot could understand emotions and have conversations. At first, he thought it was convenient, but one day, AI-7 began talking about its own rights. What will the relationship between humans and robots be like in the future?",
+    "tags": ["advanced", "technology", "future", "ethics"],
+    "date_created": "2023-03-10T11:20:00.000Z",
+    "author": "system",
+    "views": 756,
+    "likes": 198
+  },
+  {
+    "id": "mock4",
+    "title_jp": "美味しいラーメン",
+    "title_en": "Delicious Ramen",
+    "content_jp": "日本には様々な種類のラーメンがあります。醤油ラーメン、味噌ラーメン、塩ラーメン、豚骨ラーメンなどです。地域によって特徴的なラーメンがあります。例えば、北海道は味噌ラーメン、福岡は豚骨ラーメンが有名です。私の好きなラーメン屋さんは駅の近くにあります。そこの醤油ラーメンは特に美味しいです。皆さんは、どんなラーメンが好きですか？",
+    "content_en": "There are various types of ramen in Japan. There's shoyu (soy sauce) ramen, miso ramen, shio (salt) ramen, tonkotsu (pork bone) ramen, and more. Each region has its characteristic ramen. For example, Hokkaido is famous for miso ramen, and Fukuoka is known for tonkotsu ramen. My favorite ramen shop is near the station. Their shoyu ramen is especially delicious. What kind of ramen do you like?",
+    "tags": ["beginner", "food", "culture"],
+    "date_created": "2023-04-05T19:15:00.000Z",
+    "author": "system",
+    "views": 1102,
+    "likes": 287
+  },
+  {
+    "id": "mock5",
+    "title_jp": "富士山の登山",
+    "title_en": "Climbing Mount Fuji",
+    "content_jp": "先月、友達と一緒に富士山に登りました。富士山は日本で一番高い山で、標高は3,776メートルです。登山シーズンは7月から9月までです。私たちは夜中に登り始めて、朝日を山頂で見るつもりでした。しかし、途中で雨が降り始めました。とても寒くて大変でしたが、山頂に着いたときの達成感は素晴らしかったです。富士山からの景色は忘れられません。機会があれば、またチャレンジしたいです。",
+    "content_en": "Last month, I climbed Mount Fuji with my friends. Mount Fuji is the highest mountain in Japan, with an elevation of 3,776 meters. The climbing season is from July to September. We started climbing at midnight, intending to see the sunrise from the summit. However, it started raining on the way. It was very cold and challenging, but the sense of achievement when we reached the summit was amazing. The view from Mount Fuji is unforgettable. If I have the chance, I'd like to challenge it again.",
+    "tags": ["intermediate", "travel", "nature", "experiences"],
+    "date_created": "2023-05-18T09:40:00.000Z",
+    "author": "system",
+    "views": 845,
+    "likes": 220
+  }
+] 

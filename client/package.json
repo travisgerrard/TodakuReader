@@ -29,7 +29,11 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "check-grammar": "node src/scripts/check-grammar.js",
-    "check-vocabulary": "node src/scripts/check-vocabulary.js"
+    "check-vocabulary": "node src/scripts/check-vocabulary.js",
+    "check-stories-access": "node src/scripts/check-stories-access.js",
+    "test:stories-access": "react-scripts test --testPathPattern=Stories.test.js --watchAll=false",
+    "test:all": "npm run test -- --watchAll=false && npm run check-stories-access",
+    "test:ci": "npm run test:all"
   },
   "eslintConfig": {
     "extends": [

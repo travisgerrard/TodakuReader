@@ -5,30 +5,149 @@ import { GoogleLogin } from '@react-oauth/google';
 import { AuthContext } from '../context/AuthContext';
 import Container from '../components/layout/Container';
 
-const LoginCard = styled.div`
+const LoginContainer = styled.div`
+  max-width: 500px;
+  margin: 2rem auto;
+  padding: 2rem;
   background-color: ${({ theme }) => theme.surface};
   border-radius: 8px;
-  padding: 2rem;
-  max-width: 500px;
-  margin: 4rem auto;
-  box-shadow: 0 4px 6px ${({ theme }) => theme.shadow};
-  text-align: center;
+  box-shadow: 0 2px 4px ${({ theme }) => theme.shadow};
+  
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+    margin: 1.5rem auto;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 1.25rem;
+    margin: 1rem auto;
+    width: 100%;
+  }
 `;
 
-const LoginHeader = styled.h1`
+const Title = styled.h1`
   color: ${({ theme }) => theme.primary};
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  
+  @media (max-width: 480px) {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
 `;
 
-const LoginDescription = styled.p`
-  margin-bottom: 2rem;
+const Description = styled.p`
   color: ${({ theme }) => theme.textSecondary};
+  margin-bottom: 2rem;
+  text-align: center;
+  
+  @media (max-width: 480px) {
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+  }
 `;
 
-const GoogleButton = styled.div`
+const LoginOptions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+  
+  @media (max-width: 480px) {
+    gap: 1.25rem;
+  }
+`;
+
+const Divider = styled.div`
+  display: flex;
+  align-items: center;
+  margin: 1.5rem 0;
+  width: 100%;
+  
+  &::before, &::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid ${({ theme }) => theme.border};
+  }
+  
+  span {
+    padding: 0 1rem;
+    color: ${({ theme }) => theme.textSecondary};
+    font-size: 0.9rem;
+  }
+  
+  @media (max-width: 480px) {
+    margin: 1.25rem 0;
+  }
+`;
+
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+`;
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const Label = styled.label`
+  color: ${({ theme }) => theme.text};
+  font-size: 0.9rem;
+`;
+
+const Input = styled.input`
+  padding: 0.75rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 4px;
+  font-size: 1rem;
+  width: 100%;
+  
+  @media (max-width: 480px) {
+    padding: 0.7rem;
+  }
+`;
+
+const Button = styled.button`
+  background-color: ${({ theme }) => theme.primary};
+  color: white;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  width: 100%;
+  margin-top: 0.5rem;
+  
+  &:hover {
+    background-color: ${({ theme }) => theme.primary}DD;
+  }
+  
+  @media (max-width: 480px) {
+    min-height: 44px; /* Better touch target */
+  }
+`;
+
+const GoogleLoginWrapper = styled.div`
   display: flex;
   justify-content: center;
-  margin: 2rem 0;
+  width: 100%;
+  
+  /* Custom styling for Google button to ensure it's responsive */
+  div {
+    width: 100% !important;
+  }
+  
+  button {
+    width: 100% !important;
+    border-radius: 4px !important;
+    min-height: 44px !important; /* Better touch target */
+  }
 `;
 
 const ErrorMessage = styled.div`
@@ -60,21 +179,6 @@ const DebugTitle = styled.h3`
   color: #333;
 `;
 
-const Button = styled.button`
-  background-color: ${({ theme }) => theme.primary};
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  border: none;
-  margin-top: 1rem;
-  cursor: pointer;
-  font-size: 0.9rem;
-  
-  &:hover {
-    opacity: 0.9;
-  }
-`;
-
 const LoginPage = () => {
   const { isAuthenticated, loginWithGoogle, error, isLoading, debug, clearError } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -96,14 +200,19 @@ const LoginPage = () => {
     console.error('Google login failed:', error);
   };
   
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // This is just a placeholder for email/password login
+    console.log('Form submitted');
+  };
+  
   return (
     <Container>
-      <LoginCard>
-        <LoginHeader>Welcome to Todaku Reader</LoginHeader>
-        <LoginDescription>
-          Log in to create personalized Japanese reading content,
-          track your progress, and build your vocabulary.
-        </LoginDescription>
+      <LoginContainer>
+        <Title>Welcome to Todaku</Title>
+        <Description>
+          Log in to access personalized Japanese learning content and track your progress.
+        </Description>
         
         {error && (
           <ErrorMessage>
@@ -114,14 +223,38 @@ const LoginPage = () => {
           </ErrorMessage>
         )}
         
-        <GoogleButton>
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            text="signin_with"
-            useOneTap
-          />
-        </GoogleButton>
+        <LoginOptions>
+          <GoogleLoginWrapper>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              useOneTap
+              theme="filled_blue"
+              text="continue_with"
+              shape="pill"
+              locale="en"
+              width="100%"
+            />
+          </GoogleLoginWrapper>
+        </LoginOptions>
+        
+        <Divider>
+          <span>OR</span>
+        </Divider>
+        
+        <Form onSubmit={handleSubmit}>
+          <FormGroup>
+            <Label htmlFor="email">Email</Label>
+            <Input type="email" id="email" name="email" placeholder="Enter your email" required />
+          </FormGroup>
+          
+          <FormGroup>
+            <Label htmlFor="password">Password</Label>
+            <Input type="password" id="password" name="password" placeholder="Enter your password" required />
+          </FormGroup>
+          
+          <Button type="submit">Log in with Email</Button>
+        </Form>
         
         {isLoading && <p>Logging in...</p>}
         
@@ -158,7 +291,7 @@ const LoginPage = () => {
             ))}
           </DebugSection>
         )}
-      </LoginCard>
+      </LoginContainer>
     </Container>
   );
 };

@@ -3,6 +3,9 @@
  * Used as fallback when API calls fail or during testing
  */
 
+// Import the mock stories data from JSON file
+import mockStoriesJSON from '../data/mockStories.json';
+
 // Mock grammar points
 export const mockGrammarPoints = {
   grammar: [
@@ -181,6 +184,135 @@ export const mockVocabulary = {
       ]
     }
   ]
+};
+
+// Mock stories data to use as fallback - combine both sources
+export const mockStoriesData = [
+  ...mockStoriesJSON,
+  {
+    id: 'mock-1',
+    title_jp: '私の猫',
+    title_en: 'My Cat',
+    content_jp: '私の猫\n\n私の猫は黒くて大きいです。名前は月です。月は毎日窓の近くで寝ます。時々外に行きたがりますが、大抵は家の中にいます。\n\n月は魚が大好きです。私が台所で魚を料理すると、すぐに来ます。「食べたい」と言っているようです。',
+    content_en: 'My Cat\n\nMy cat is black and big. His name is Tsuki (Moon). Tsuki sleeps near the window every day. Sometimes he wants to go outside, but mostly he stays inside the house.\n\nTsuki loves fish. When I cook fish in the kitchen, he comes right away. It is as if he is saying "I want to eat."',
+    tadoku_level: 1,
+    wanikani_max_level: 10,
+    genki_max_chapter: 5,
+    topic: 'Daily Life',
+    upvotes: 42
+  },
+  {
+    id: 'mock-2',
+    title_jp: '東京の旅行',
+    title_en: 'Trip to Tokyo',
+    content_jp: '東京の旅行\n\n先週、私は東京に旅行しました。東京は大きい都市です。たくさんの人がいます。\n\n私は東京タワーに行きました。とても高くて、景色がきれいでした。それから、渋谷に行きました。渋谷はとても混んでいました。',
+    content_en: 'Trip to Tokyo\n\nLast week, I traveled to Tokyo. Tokyo is a big city. There are many people.\n\nI went to Tokyo Tower. It was very tall, and the view was beautiful. After that, I went to Shibuya. Shibuya was very crowded.',
+    tadoku_level: 2,
+    wanikani_max_level: 15,
+    genki_max_chapter: 8,
+    topic: 'Travel',
+    upvotes: 38
+  },
+  {
+    id: 'mock-3',
+    title_jp: '美味しいラーメン',
+    title_en: 'Delicious Ramen',
+    content_jp: '美味しいラーメン\n\n昨日、友達と新しいラーメン屋に行きました。そのお店は駅の近くにあります。\n\n私は味噌ラーメンを食べました。とても美味しかったです。友達は塩ラーメンを注文しました。彼も満足していました。また行きたいです。',
+    content_en: 'Delicious Ramen\n\nYesterday, I went to a new ramen shop with my friend. The shop is near the station.\n\nI ate miso ramen. It was very delicious. My friend ordered salt ramen. He was also satisfied. I want to go there again.',
+    tadoku_level: 2,
+    wanikani_max_level: 20,
+    genki_max_chapter: 10,
+    topic: 'Food',
+    upvotes: 25
+  }
+];
+
+// Function to get mock stories data with pagination and filtering
+export const getMockStoriesData = (options = {}) => {
+  const { 
+    limit = 10, 
+    offset = 0, 
+    delay = 300,
+    tadoku_level = '',
+    wanikani_level = '',
+    genki_chapter = '',
+    length = '',
+    topic = '',
+    search = ''
+  } = options;
+  
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // Filter stories based on search criteria
+      let filteredStories = [...mockStoriesData];
+      
+      // Apply filters
+      if (tadoku_level && tadoku_level !== 'any') {
+        filteredStories = filteredStories.filter(
+          story => story.tadoku_level == tadoku_level
+        );
+      }
+      
+      if (wanikani_level && wanikani_level !== 'any') {
+        filteredStories = filteredStories.filter(
+          story => story.wanikani_max_level <= parseInt(wanikani_level)
+        );
+      }
+      
+      if (genki_chapter && genki_chapter !== 'any') {
+        filteredStories = filteredStories.filter(
+          story => story.genki_max_chapter <= parseInt(genki_chapter)
+        );
+      }
+      
+      if (length && length !== 'any') {
+        // Assuming length categories: short, medium, long
+        const getContentLength = (content) => {
+          const wordCount = content.split(/\s+/).length;
+          if (wordCount < 50) return 'short';
+          if (wordCount < 150) return 'medium';
+          return 'long';
+        };
+        
+        filteredStories = filteredStories.filter(
+          story => getContentLength(story.content_jp) === length
+        );
+      }
+      
+      if (topic && topic !== 'any') {
+        filteredStories = filteredStories.filter(
+          story => story.topic === topic || 
+                  story.tags?.includes(topic.toLowerCase())
+        );
+      }
+      
+      if (search) {
+        const searchLower = search.toLowerCase();
+        filteredStories = filteredStories.filter(
+          story => 
+            story.title_jp.toLowerCase().includes(searchLower) ||
+            story.title_en.toLowerCase().includes(searchLower) ||
+            story.content_jp.toLowerCase().includes(searchLower) ||
+            story.content_en.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      // Apply pagination
+      const startIndex = offset;
+      const endIndex = Math.min(startIndex + limit, filteredStories.length);
+      const paginatedStories = filteredStories.slice(startIndex, endIndex);
+      
+      resolve({
+        stories: paginatedStories,
+        pagination: {
+          total: filteredStories.length,
+          limit: limit,
+          offset: offset,
+          hasMore: endIndex < filteredStories.length
+        }
+      });
+    }, delay);
+  });
 };
 
 // Export all mock data with a function to simulate API delay

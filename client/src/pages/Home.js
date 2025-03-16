@@ -133,7 +133,7 @@ const HomePage = () => {
         <HeroTitle>泊書 Todaku Reader</HeroTitle>
         <HeroSubtitle>
           A personalized Japanese reading experience tailored to your level.
-          Generate custom stories based on WaniKani levels, Genki chapters, and Tadoku difficulty.
+          Browse all stories freely or create an account to generate custom content based on your WaniKani levels, Genki chapters, and Tadoku difficulty.
         </HeroSubtitle>
         
         <ButtonGroup>
@@ -149,9 +149,18 @@ const HomePage = () => {
       <FeaturesGrid>
         <FeatureCard>
           <FeatureIcon>📚</FeatureIcon>
+          <FeatureTitle>Free Access to All Stories</FeatureTitle>
+          <p>
+            Browse and read all stories without needing to create an account.
+            Access a growing library of Japanese content suitable for various proficiency levels.
+          </p>
+        </FeatureCard>
+        
+        <FeatureCard>
+          <FeatureIcon>✨</FeatureIcon>
           <FeatureTitle>Personalized Content</FeatureTitle>
           <p>
-            Generate stories tailored to your WaniKani level and Genki textbook progress.
+            Create an account to generate stories tailored to your WaniKani level and Genki textbook progress.
             Practice with content that's just right for your current abilities.
           </p>
         </FeatureCard>

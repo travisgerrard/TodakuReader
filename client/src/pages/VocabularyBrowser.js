@@ -28,6 +28,15 @@ const SearchContainer = styled.div`
   border-radius: 8px;
   margin-bottom: 2rem;
   box-shadow: 0 2px 4px ${({ theme }) => theme.shadow};
+  
+  @media (max-width: 768px) {
+    padding: 1.25rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
 `;
 
 const SearchForm = styled.form`
@@ -36,6 +45,7 @@ const SearchForm = styled.form`
   
   @media (max-width: 768px) {
     flex-direction: column;
+    gap: 0.75rem;
   }
 `;
 
@@ -45,6 +55,10 @@ const Input = styled.input`
   border: 1px solid ${({ theme }) => theme.border};
   border-radius: 4px;
   font-size: 1rem;
+  
+  @media (max-width: 480px) {
+    width: 100%;
+  }
 `;
 
 const Select = styled.select`
@@ -97,9 +111,15 @@ const FiltersRow = styled.div`
   display: flex;
   gap: 1rem;
   margin-top: 1rem;
+  flex-wrap: wrap;
   
   @media (max-width: 768px) {
-    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 `;
 
@@ -107,6 +127,10 @@ const FilterGroup = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  
+  @media (max-width: 480px) {
+    width: 100%;
+  }
 `;
 
 const FilterLabel = styled.label`
@@ -125,30 +149,50 @@ const VocabCard = styled.div`
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 2px 4px ${({ theme }) => theme.shadow};
-  transition: transform 0.3s;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 8px ${({ theme }) => theme.shadow};
+  @media (max-width: 768px) {
+    padding: 1.25rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 1rem;
   }
 `;
 
 const VocabWord = styled.h3`
-  font-size: 1.5rem;
   color: ${({ theme }) => theme.primary};
-  margin-bottom: 0.5rem;
+  font-size: 1.4rem;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  @media (max-width: 768px) {
+    font-size: 1.3rem;
+  }
 `;
 
 const VocabReading = styled.div`
-  font-size: 1.1rem;
-  margin-bottom: 1rem;
   color: ${({ theme }) => theme.textSecondary};
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  
+  @media (max-width: 480px) {
+    font-size: 0.95rem;
+  }
 `;
 
 const VocabMeaning = styled.div`
+  font-size: 1.1rem;
   margin-bottom: 1rem;
-  font-size: 1rem;
-  color: ${({ theme }) => theme.text};
+  
+  @media (max-width: 480px) {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+  }
 `;
 
 const VocabMeta = styled.div`
@@ -192,25 +236,35 @@ const NoResults = styled.div`
 const Pagination = styled.div`
   display: flex;
   justify-content: center;
+  align-items: center;
   margin-top: 2rem;
+  flex-wrap: wrap;
   gap: 0.5rem;
+  
+  @media (max-width: 480px) {
+    margin-top: 1.5rem;
+  }
 `;
 
 const PageButton = styled.button`
-  background-color: ${({ active, theme }) => active ? theme.primary : theme.background};
-  color: ${({ active, theme }) => active ? 'white' : theme.text};
-  border: 1px solid ${({ active, theme }) => active ? theme.primary : theme.border};
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 4px;
-  padding: 0.5rem 0.75rem;
+  background-color: ${({ active, theme }) => active ? theme.primary : theme.surface};
+  color: ${({ active, theme }) => active ? 'white' : theme.text};
+  font-weight: ${({ active }) => active ? 'bold' : 'normal'};
   cursor: pointer;
   
   &:hover {
-    background-color: ${({ active, theme }) => active ? theme.primary : theme.surface};
+    background-color: ${({ active, theme }) => active ? theme.primary : theme.primaryLight};
   }
   
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  @media (max-width: 480px) {
+    width: 36px;
+    height: 36px;
   }
 `;
 
