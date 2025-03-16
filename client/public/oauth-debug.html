@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OAuth Debug Tool</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .log-item {
+      margin-bottom: 8px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .log-container {
+      height: 300px;
+      overflow-y: auto;
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .info {
+      background-color: #e8f0fe;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Google OAuth Debug Tool</h1>
+  
+  <div class="card">
+    <h2>Environment Information</h2>
+    <div id="env-info" class="info"></div>
+  </div>
+  
+  <div class="card">
+    <h2>Google OAuth Test</h2>
+    <p>Click the button below to test Google Sign-In:</p>
+    <div id="google-signin-button"></div>
+    <button id="check-origin" class="button">Check Origin Authorization</button>
+  </div>
+  
+  <div class="card">
+    <h2>Debug Logs</h2>
+    <div class="log-container" id="logs"></div>
+  </div>
+
+  <script>
+    const CLIENT_ID = '928053769586-nsvdargo9lidmn9evt2gdt6k3pr4fd5e.apps.googleusercontent.com';
+    const logs = document.getElementById('logs');
+    const envInfo = document.getElementById('env-info');
+    
+    // Helper function to log messages
+    function log(message, data) {
+      const timestamp = new Date().toISOString();
+      const logItem = document.createElement('div');
+      logItem.className = 'log-item';
+      
+      let content = `<strong>[${timestamp}]</strong> ${message}`;
+      if (data) {
+        content += `<pre>${typeof data === 'object' ? JSON.stringify(data, null, 2) : data}</pre>`;
+      }
+      
+      logItem.innerHTML = content;
+      logs.appendChild(logItem);
+      logs.scrollTop = logs.scrollHeight;
+      console.log(`[OAuth Debug] ${message}`, data || '');
+    }
+    
+    // Display environment information
+    function showEnvironmentInfo() {
+      const origin = window.location.origin;
+      const expectedOrigin = 'http://localhost:3000';
+      
+      const info = `
+        <div><strong>Current Origin:</strong> ${origin}</div>
+        <div><strong>Expected Origin:</strong> ${expectedOrigin}</div>
+        <div><strong>Origin Match:</strong> ${origin === expectedOrigin ? '✅ Yes' : '❌ No'}</div>
+        <div><strong>Google Client ID:</strong> ${CLIENT_ID ? '✅ Set' : '❌ Not set'}</div>
+      `;
+      
+      envInfo.innerHTML = info;
+      log('Environment information loaded', {
+        currentOrigin: origin,
+        expectedOrigin,
+        originMatch: origin === expectedOrigin,
+        clientIdSet: !!CLIENT_ID
+      });
+    }
+    
+    // Initialize Google Sign-In
+    function initGoogleSignIn() {
+      log('Loading Google Sign-In API');
+      
+      // Load the Google Sign-In API script
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        log('Google Sign-In API loaded successfully');
+        renderGoogleSignInButton();
+      };
+      script.onerror = (error) => {
+        log('Failed to load Google Sign-In API', error);
+      };
+      
+      document.head.appendChild(script);
+    }
+    
+    // Render the Google Sign-In button
+    function renderGoogleSignInButton() {
+      try {
+        log('Rendering Google Sign-In button');
+        
+        google.accounts.id.initialize({
+          client_id: CLIENT_ID,
+          callback: handleGoogleSignIn,
+          auto_select: false
+        });
+        
+        google.accounts.id.renderButton(
+          document.getElementById('google-signin-button'),
+          { theme: 'outline', size: 'large', width: 250 }
+        );
+        
+        log('Google Sign-In button rendered successfully');
+      } catch (error) {
+        log('Error rendering Google Sign-In button', error.message);
+      }
+    }
+    
+    // Handle Google Sign-In response
+    function handleGoogleSignIn(response) {
+      log('Google Sign-In response received', {
+        credential: response.credential ? response.credential.substring(0, 20) + '...' : null
+      });
+      
+      // Here you would normally send this token to your server
+      // For debugging, we'll just verify it client-side
+      const token = response.credential;
+      
+      if (token) {
+        log('Token received, would normally send to server at /api/auth/google');
+        // Decode JWT payload for inspection (just the header and payload, not verified)
+        try {
+          const parts = token.split('.');
+          const header = JSON.parse(atob(parts[0]));
+          const payload = JSON.parse(atob(parts[1]));
+          
+          log('Token header', header);
+          log('Token payload (user info)', {
+            sub: payload.sub,
+            email: payload.email,
+            name: payload.name,
+            picture: payload.picture,
+            // Don't show the full payload for privacy reasons
+          });
+        } catch (error) {
+          log('Error decoding token', error.message);
+        }
+      } else {
+        log('No credential received in response');
+      }
+    }
+    
+    // Check if origin is authorized
+    document.getElementById('check-origin').addEventListener('click', async () => {
+      log('Checking if origin is authorized for Google Sign-In');
+      const origin = window.location.origin;
+      
+      try {
+        // Make a simple request to Google's tokeninfo endpoint
+        // This won't actually validate anything but will help us see if network requests work
+        const testUrl = `https://oauth2.googleapis.com/tokeninfo?dummy=1`;
+        log(`Testing network connectivity to Google OAuth servers`);
+        
+        const response = await fetch(testUrl);
+        const data = await response.json();
+        
+        log('Network connection to Google OAuth servers is working', {
+          status: response.status,
+          response: data
+        });
+        
+        log(`Remember: Authorized JavaScript origins must include: ${origin}`);
+        log('Check the Google Cloud Console: https://console.cloud.google.com/apis/credentials');
+      } catch (error) {
+        log('Error checking authorization', error.message);
+      }
+    });
+    
+    // Initialize
+    window.onload = () => {
+      log('OAuth Debug Tool Initialized');
+      showEnvironmentInfo();
+      initGoogleSignIn();
+    };
+  </script>
+</body>
+</html> 

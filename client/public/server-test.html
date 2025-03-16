@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Connection Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .log-container {
+      height: 300px;
+      overflow-y: auto;
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    .button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Server Connection Test</h1>
+  
+  <div class="card">
+    <h2>Server API Tests</h2>
+    <button id="test-api" class="button">Test API Connection</button>
+    <button id="test-auth" class="button">Test Auth Route</button>
+    <button id="clear-log" class="button">Clear Log</button>
+  </div>
+  
+  <div class="card">
+    <h2>Server Connection Logs</h2>
+    <div id="logs" class="log-container"></div>
+  </div>
+
+  <script>
+    const logs = document.getElementById('logs');
+    
+    // Log function
+    function log(message, data = null) {
+      const timestamp = new Date().toISOString();
+      let entry = `[${timestamp}] ${message}`;
+      
+      if (data) {
+        if (typeof data === 'object') {
+          entry += '\n' + JSON.stringify(data, null, 2);
+        } else {
+          entry += '\n' + data;
+        }
+      }
+      
+      logs.innerHTML += `<div>${entry}</div>`;
+      logs.scrollTop = logs.scrollHeight;
+    }
+    
+    // Clear logs
+    document.getElementById('clear-log').addEventListener('click', () => {
+      logs.innerHTML = '';
+    });
+    
+    // Test API connection
+    document.getElementById('test-api').addEventListener('click', async () => {
+      log('Testing API connection to http://localhost:5001/api...');
+      
+      try {
+        const response = await fetch('http://localhost:5001/api', {
+          method: 'GET',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
+        
+        const data = await response.json();
+        log('API connection successful!', data);
+      } catch (error) {
+        log('API connection failed!', error.message);
+        log('This likely means your server is not running or CORS is not configured correctly.');
+      }
+    });
+    
+    // Test Auth route
+    document.getElementById('test-auth').addEventListener('click', async () => {
+      log('Testing Auth route at http://localhost:5001/api/auth/test...');
+      
+      try {
+        const response = await fetch('http://localhost:5001/api/auth/test', {
+          method: 'GET',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
+        
+        const data = await response.json();
+        log('Auth route test successful!', data);
+      } catch (error) {
+        log('Auth route test failed!', error.message);
+        log('This likely means your auth route is not set up or your server has an error.');
+      }
+    });
+    
+    // Log on page load
+    log('Page loaded. Use the buttons above to test server connections.');
+  </script>
+</body>
+</html> 

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google OAuth Test</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .log {
+            background-color: #eee;
+            border-left: 3px solid #007bff;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        h1 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Google OAuth Test</h1>
+    
+    <div class="container">
+        <h2>Test Configuration</h2>
+        <p>
+            <strong>Client ID:</strong> 
+            <span id="client-id">928053769586-nsvdargo9lidmn9evt2gdt6k3pr4fd5e.apps.googleusercontent.com</span>
+        </p>
+        <p>
+            <strong>Current URL:</strong> 
+            <span id="current-url"></span>
+        </p>
+        <p>
+            <button onclick="checkOrigin()">Check Origin</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </p>
+    </div>
+
+    <div class="container">
+        <h2>Google Sign-In</h2>
+        <div id="g_id_onload"
+            data-client_id="928053769586-nsvdargo9lidmn9evt2gdt6k3pr4fd5e.apps.googleusercontent.com"
+            data-callback="handleCredentialResponse"
+            data-auto_prompt="false">
+        </div>
+        <div class="g_id_signin"
+            data-type="standard"
+            data-size="large"
+            data-theme="outline"
+            data-text="sign_in_with"
+            data-shape="rectangular"
+            data-logo_alignment="left">
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Debug Log</h2>
+        <div class="log" id="log"></div>
+    </div>
+
+    <script>
+        // Update current URL display
+        document.getElementById('current-url').textContent = window.location.href;
+        
+        // Function to log messages
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toISOString();
+            logElement.innerHTML += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        // Clear log
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        // Handle Google Sign-In response
+        function handleCredentialResponse(response) {
+            log("Google Sign-In response received:");
+            log(JSON.stringify(response, null, 2));
+            
+            // Verify the token with our server
+            const credential = response.credential;
+            
+            if (credential) {
+                log("Sending token to server...");
+                
+                // Send token to the server for verification
+                fetch('http://localhost:5001/api/auth/google', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ tokenId: credential })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    log("Server response:");
+                    log(JSON.stringify(data, null, 2));
+                    if (data.token) {
+                        log("✅ Authentication successful! JWT token received from server.");
+                        log("You can now use this token for authenticated requests.");
+                    }
+                })
+                .catch(error => {
+                    log("Error sending token to server:");
+                    log(error.toString());
+                });
+                
+                // Decode JWT payload for inspection (just the header and payload, not verified)
+                try {
+                    const tokenParts = credential.split('.');
+                    if (tokenParts.length === 3) {
+                        const header = JSON.parse(atob(tokenParts[0]));
+                        const payload = JSON.parse(atob(tokenParts[1]));
+                        log("JWT Header:");
+                        log(JSON.stringify(header, null, 2));
+                        log("JWT Payload:");
+                        log(JSON.stringify(payload, null, 2));
+                    }
+                } catch (e) {
+                    log("Error decoding JWT token:");
+                    log(e.toString());
+                }
+            }
+        }
+        
+        // Check if the current origin is allowed
+        function checkOrigin() {
+            log("Current origin: " + window.location.origin);
+            log("Expected allowed origins: http://localhost:3000 or http://localhost:3001");
+            
+            if (window.location.origin === "http://localhost:3000" || window.location.origin === "http://localhost:3001") {
+                log("✅ Origin matches one of the authorized JavaScript origins");
+            } else {
+                log("❌ Origin does NOT match any authorized JavaScript origin");
+                log("This is likely why Google OAuth is failing.");
+                log("Please access this page from http://localhost:3000 or http://localhost:3001, or update your Google OAuth configuration.");
+            }
+        }
+        
+        // Listen for Google Sign-In errors
+        window.addEventListener('error', function(event) {
+            if (event.message && event.message.includes('google')) {
+                log("Google Sign-In error:");
+                log(event.message);
+            }
+        });
+        
+        log("Page loaded. Ready for testing.");
+        log("Expected authorized JavaScript origin: http://localhost:3000");
+        log("Current origin: " + window.location.origin);
+    </script>
+</body>
+</html> 

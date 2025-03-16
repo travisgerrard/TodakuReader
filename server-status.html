@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Status Check</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      color: #333;
+    }
+    h1 {
+      color: #2c3e50;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+    }
+    .card {
+      background: #f9f9f9;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+      color: #3498db;
+    }
+    .status {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .status-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+    .success {
+      background-color: #2ecc71;
+    }
+    .error {
+      background-color: #e74c3c;
+    }
+    .pending {
+      background-color: #f39c12;
+    }
+    .details {
+      background: #fff;
+      border-radius: 4px;
+      padding: 15px;
+      margin-top: 10px;
+      border: 1px solid #ddd;
+      overflow-x: auto;
+    }
+    pre {
+      margin: 0;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 8px;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+  </style>
+</head>
+<body>
+  <h1>Server Status Check</h1>
+  
+  <div class="card">
+    <h2>API Connection</h2>
+    <div class="status">
+      <div id="api-status-icon" class="status-icon pending"></div>
+      <div id="api-status-text">Checking API status...</div>
+    </div>
+    <button id="test-api">Test API Connection</button>
+    <div id="api-details" class="details" style="display: none;">
+      <pre id="api-response"></pre>
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>Authentication Route</h2>
+    <div class="status">
+      <div id="auth-status-icon" class="status-icon pending"></div>
+      <div id="auth-status-text">Checking auth route...</div>
+    </div>
+    <button id="test-auth">Test Auth Route</button>
+    <div id="auth-details" class="details" style="display: none;">
+      <pre id="auth-response"></pre>
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>Google OAuth Test</h2>
+    <p>This will test the full OAuth flow by redirecting to the oauth-test.html page.</p>
+    <button id="oauth-test">Go to OAuth Test Page</button>
+  </div>
+  
+  <script>
+    // API Connection Test
+    document.getElementById('test-api').addEventListener('click', async () => {
+      const statusIcon = document.getElementById('api-status-icon');
+      const statusText = document.getElementById('api-status-text');
+      const details = document.getElementById('api-details');
+      const response = document.getElementById('api-response');
+      
+      statusIcon.className = 'status-icon pending';
+      statusText.textContent = 'Testing API connection...';
+      details.style.display = 'block';
+      response.textContent = 'Connecting to http://localhost:5001/api...';
+      
+      try {
+        console.log('Attempting to connect to API...');
+        const res = await fetch('http://localhost:5001/api', {
+          method: 'GET',
+          mode: 'cors'
+        });
+        
+        console.log('API response received:', res);
+        const data = await res.json();
+        
+        statusIcon.className = 'status-icon success';
+        statusText.textContent = 'API connection successful!';
+        response.textContent = JSON.stringify(data, null, 2);
+      } catch (error) {
+        console.error('API connection error:', error);
+        statusIcon.className = 'status-icon error';
+        statusText.textContent = 'API connection failed!';
+        response.textContent = `Error: ${error.toString()}\n\nThis likely means the server is not running at http://localhost:5001.\n\nPlease start the server using:\nnode server/index.js`;
+      }
+    });
+    
+    // Auth Route Test
+    document.getElementById('test-auth').addEventListener('click', async () => {
+      const statusIcon = document.getElementById('auth-status-icon');
+      const statusText = document.getElementById('auth-status-text');
+      const details = document.getElementById('auth-details');
+      const response = document.getElementById('auth-response');
+      
+      statusIcon.className = 'status-icon pending';
+      statusText.textContent = 'Testing auth route...';
+      details.style.display = 'block';
+      response.textContent = 'Connecting to http://localhost:5001/api/auth/test...';
+      
+      try {
+        console.log('Attempting to connect to auth route...');
+        const res = await fetch('http://localhost:5001/api/auth/test', {
+          method: 'GET',
+          mode: 'cors'
+        });
+        
+        console.log('Auth response received:', res);
+        const data = await res.json();
+        
+        statusIcon.className = 'status-icon success';
+        statusText.textContent = 'Auth route is working!';
+        response.textContent = JSON.stringify(data, null, 2);
+      } catch (error) {
+        console.error('Auth route error:', error);
+        statusIcon.className = 'status-icon error';
+        statusText.textContent = 'Auth route failed!';
+        response.textContent = `Error: ${error.toString()}\n\nThis likely means either:\n1. The server is not running\n2. The auth routes are not set up correctly`;
+      }
+    });
+    
+    // OAuth Test Link
+    document.getElementById('oauth-test').addEventListener('click', () => {
+      window.location.href = 'http://localhost:3001/oauth-test.html';
+    });
+    
+    // Run initial tests
+    window.addEventListener('load', () => {
+      document.getElementById('test-api').click();
+      setTimeout(() => {
+        document.getElementById('test-auth').click();
+      }, 1000);
+    });
+  </script>
+</body>
+</html> 

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Auth Test</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .debug-section {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 20px;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 10px 0;
+    }
+    #google-button {
+      margin: 20px 0;
+    }
+    h1 {
+      color: #4285f4;
+    }
+    pre {
+      background-color: #eee;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Google Auth Test Page</h1>
+    <p>This page is designed to test Google authentication in isolation.</p>
+    
+    <div id="google-button"></div>
+    
+    <div class="debug-section">
+      <h3>Environment Info</h3>
+      <div id="env-info"></div>
+      
+      <h3>Log</h3>
+      <div id="log"></div>
+      
+      <h3>Token</h3>
+      <pre id="token-display">No token yet</pre>
+      
+      <h3>API Test</h3>
+      <button id="test-api">Test API Call with Token</button>
+      <div id="api-result">Not tested yet</div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration
+    const clientId = '928053769586-nsvdargo9lidmn9evt2gdt6k3pr4fd5e.apps.googleusercontent.com';
+    const apiUrl = 'http://localhost:5001/api';
+    
+    // Logging function
+    function log(message, data = null) {
+      const logElement = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.innerHTML = `<strong>[${new Date().toISOString()}]</strong> ${message}`;
+      
+      if (data) {
+        const dataJson = document.createElement('pre');
+        dataJson.textContent = JSON.stringify(data, null, 2);
+        entry.appendChild(dataJson);
+      }
+      
+      logElement.prepend(entry);
+      console.log(message, data);
+    }
+    
+    // Display environment info
+    document.getElementById('env-info').innerHTML = `
+      <div>Origin: ${window.location.origin}</div>
+      <div>Client ID: ${clientId}</div>
+      <div>API URL: ${apiUrl}</div>
+    `;
+    
+    log('Page loaded');
+    
+    // Initialize Google Sign-In
+    window.onload = function() {
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleCredentialResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
+      
+      google.accounts.id.renderButton(
+        document.getElementById('google-button'),
+        { 
+          theme: 'outline', 
+          size: 'large',
+          text: 'signin_with'
+        }
+      );
+      
+      log('Google Sign-In initialized');
+    };
+    
+    // Handle the Google Sign-In response
+    let currentToken = null;
+    function handleCredentialResponse(response) {
+      log('Received response from Google', { credential: response.credential ? '(credential string)' : 'none' });
+      
+      if (response.credential) {
+        currentToken = response.credential;
+        document.getElementById('token-display').textContent = `${currentToken.substring(0, 20)}...`;
+        log('Token received and stored');
+      } else {
+        log('No credential in response', response);
+      }
+    }
+    
+    // Test API call
+    document.getElementById('test-api').addEventListener('click', async function() {
+      if (!currentToken) {
+        log('No token available. Sign in first.');
+        document.getElementById('api-result').textContent = 'Error: No token available';
+        return;
+      }
+      
+      log('Testing API call with token');
+      
+      try {
+        const response = await fetch(`${apiUrl}/auth/google`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ tokenId: currentToken })
+        });
+        
+        const data = await response.json();
+        log('API response', { status: response.status, data });
+        
+        document.getElementById('api-result').innerHTML = `
+          <div>Status: ${response.status}</div>
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+        `;
+      } catch (error) {
+        log('API call error', error);
+        document.getElementById('api-result').textContent = `Error: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html> 
