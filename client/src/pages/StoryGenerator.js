@@ -268,8 +268,14 @@ const StoryGenerator = () => {
               maxLength={50}
               required
             />
-            <small style={{ color: formData.topic.length > 40 ? 'orange' : 'inherit' }}>
+            <small style={{ 
+              color: formData.topic.length >= 45 ? 'red' : 
+                     formData.topic.length >= 35 ? 'orange' : 
+                     'inherit' 
+            }}>
               {formData.topic.length}/50 characters
+              {formData.topic.length >= 45 ? ' - Topic is too long!' :
+               formData.topic.length >= 35 ? ' - Topic is getting long' : ''}
             </small>
           </FormGroup>
           
