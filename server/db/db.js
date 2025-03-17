@@ -25,8 +25,9 @@ const pool = new Pool({
   max: 20, // Maximum number of clients in the pool
 });
 
-// Test the connection
-pool.on('connect', () => {
+// Set the search path to public schema
+pool.on('connect', (client) => {
+  client.query('SET search_path TO public');
   console.log(`Connected to PostgreSQL database: ${process.env.DB_NAME}`);
 });
 

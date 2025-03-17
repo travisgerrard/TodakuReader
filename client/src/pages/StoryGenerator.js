@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import api from '../utils/api';
+import api, { generateStoryApi } from '../utils/api';
 import { AuthContext } from '../context/AuthContext';
 import Container from '../components/layout/Container';
 
@@ -139,7 +139,7 @@ const StoryGenerator = () => {
     setGenerating(true);
     
     try {
-      const res = await api.post('/stories/generate', formData);
+      const res = await generateStoryApi.post('/stories/generate', formData);
       navigate(`/stories/${res.data.id}`);
     } catch (err) {
       console.error('Story generation error:', err);

@@ -2,10 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const dotenv = require('dotenv');
-const db = require('./db/db');
 
 // Load environment variables from the root .env file
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
+
+// Now require the db module after environment variables are loaded
+const db = require('./db/db');
 
 // Initialize express app
 const app = express();
@@ -32,7 +34,7 @@ app.get('/api/healthcheck', (req, res) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5001'],
+  origin: ['http://localhost:3000', 'http://localhost:5001', 'https://todakureader.com', 'https://www.todakureader.com'],
   credentials: true
 }));
 
@@ -102,8 +104,16 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`API available at http://localhost:${PORT}/api`);
   console.log(`Health check available at http://localhost:${PORT}/api/healthcheck`);
+  
+  // Test database connection and tables
+  try {
+    const result = await db.query('SELECT * FROM users LIMIT 1');
+    console.log('Database connection successful, users table exists');
+  } catch (err) {
+    console.error('Error testing users table:', err.message);
+  }
 }); 

@@ -6,7 +6,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://todakureader.com/
 // Create an axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000, // 10 second timeout
+  timeout: 30000, // Increased to 30 seconds for general requests
   headers: {
     'Content-Type': 'application/json'
   }
@@ -66,6 +66,26 @@ api.interceptors.response.use(
     
     return Promise.reject(error);
   }
+);
+
+// Create a special instance with longer timeout for story generation
+export const generateStoryApi = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 120000, // 2 minutes timeout for story generation
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Apply the same interceptors to the story generation API
+generateStoryApi.interceptors.request.use(
+  api.interceptors.request.handlers[0].fulfilled,
+  api.interceptors.request.handlers[0].rejected
+);
+
+generateStoryApi.interceptors.response.use(
+  api.interceptors.response.handlers[0].fulfilled,
+  api.interceptors.response.handlers[0].rejected
 );
 
 export default api; 

@@ -9,7 +9,11 @@ module.exports = {
       log_date_format: 'YYYY-MM-DD HH:mm:ss',
       error_file: 'logs/client-error.log',
       out_file: 'logs/client-out.log',
-      merge_logs: true
+      merge_logs: true,
+      instances: 1,
+      max_restarts: 5,
+      restart_delay: 10000,
+      autorestart: true
     }
   ]
 }; 

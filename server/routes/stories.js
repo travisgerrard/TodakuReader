@@ -59,6 +59,9 @@ The output format should be as follows:
 
     // Call OpenAI API (ChatGPT 4o)
     try {
+      console.log('Calling OpenAI API for story generation...');
+      const startTime = Date.now();
+      
       const openaiResponse = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
@@ -79,9 +82,13 @@ The output format should be as follows:
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-          }
+          },
+          timeout: 60000 // Increased to 60 seconds for OpenAI requests
         }
       );
+
+      const apiDuration = Date.now() - startTime;
+      console.log(`OpenAI API responded in ${apiDuration}ms`);
 
       // Parse response
       const responseText = openaiResponse.data.choices[0].message.content;

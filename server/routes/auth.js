@@ -6,7 +6,11 @@ const db = require('../db/db');
 const auth = require('../middleware/auth');
 
 // Initialize Google OAuth client
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const client = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  `${process.env.API_URL || 'http://localhost:5001'}/api/auth/google/callback`
+);
 
 // @route   GET api/auth/test
 // @desc    Test route
@@ -39,43 +43,54 @@ router.post('/google', async (req, res) => {
     const { sub: googleId, email, name } = payload;
     console.log('Google token verified for:', email);
 
-    // Check if user exists in database
-    const userResult = await db.query(
-      'SELECT * FROM users WHERE google_id = $1',
-      [googleId]
-    );
-
-    let userId;
-
-    if (userResult.rows.length === 0) {
-      // Create new user
-      const newUserResult = await db.query(
-        'INSERT INTO users (google_id, email) VALUES ($1, $2) RETURNING id',
-        [googleId, email]
+    try {
+      console.log('Attempting to query users table with googleId:', googleId);
+      
+      // Check if user exists in database
+      const userResult = await db.query(
+        'SELECT * FROM users WHERE google_id = $1',
+        [googleId]
       );
-      userId = newUserResult.rows[0].id;
-    } else {
-      // User exists
-      userId = userResult.rows[0].id;
+      
+      console.log('User query result:', userResult.rows);
+      
+      let userId;
+      
+      if (userResult.rows.length === 0) {
+        console.log('User not found, creating new user with email:', email);
+        // Create new user
+        const newUserResult = await db.query(
+          'INSERT INTO users (google_id, email) VALUES ($1, $2) RETURNING id',
+          [googleId, email]
+        );
+        userId = newUserResult.rows[0].id;
+        console.log('New user created with ID:', userId);
+      } else {
+        // User exists
+        userId = userResult.rows[0].id;
+      }
+
+      // Create JWT payload
+      const jwtPayload = {
+        user: {
+          id: userId
+        }
+      };
+
+      // Sign JWT token
+      jwt.sign(
+        jwtPayload,
+        process.env.JWT_SECRET,
+        { expiresIn: '1d' },
+        (err, token) => {
+          if (err) throw err;
+          res.json({ token });
+        }
+      );
+    } catch (err) {
+      console.error('User query error:', err.message);
+      res.status(500).json({ message: 'Server error' });
     }
-
-    // Create JWT payload
-    const jwtPayload = {
-      user: {
-        id: userId
-      }
-    };
-
-    // Sign JWT token
-    jwt.sign(
-      jwtPayload,
-      process.env.JWT_SECRET,
-      { expiresIn: '1d' },
-      (err, token) => {
-        if (err) throw err;
-        res.json({ token });
-      }
-    );
   } catch (err) {
     console.error('Auth error:', err.message);
     res.status(500).json({ message: 'Server error' });
@@ -136,8 +151,6 @@ router.get('/google/callback', async (req, res) => {
     // Exchange code for tokens
     const { tokens } = await client.getToken({
       code,
-      client_id: process.env.GOOGLE_CLIENT_ID,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET,
       redirect_uri: `${process.env.API_URL || 'http://localhost:5001'}/api/auth/google/callback`
     });
     
@@ -150,44 +163,55 @@ router.get('/google/callback', async (req, res) => {
     const payload = ticket.getPayload();
     const { sub: googleId, email } = payload;
     
-    // Check if user exists in database
-    const userResult = await db.query(
-      'SELECT * FROM users WHERE google_id = $1',
-      [googleId]
-    );
-    
-    let userId;
-    
-    if (userResult.rows.length === 0) {
-      // Create new user
-      const newUserResult = await db.query(
-        'INSERT INTO users (google_id, email) VALUES ($1, $2) RETURNING id',
-        [googleId, email]
+    try {
+      console.log('Attempting to query users table with googleId:', googleId);
+      
+      // Check if user exists in database
+      const userResult = await db.query(
+        'SELECT * FROM users WHERE google_id = $1',
+        [googleId]
       );
-      userId = newUserResult.rows[0].id;
-    } else {
-      // User exists
-      userId = userResult.rows[0].id;
-    }
-    
-    // Create JWT payload
-    const jwtPayload = {
-      user: {
-        id: userId
+      
+      console.log('User query result:', userResult.rows);
+      
+      let userId;
+      
+      if (userResult.rows.length === 0) {
+        console.log('User not found, creating new user with email:', email);
+        // Create new user
+        const newUserResult = await db.query(
+          'INSERT INTO users (google_id, email) VALUES ($1, $2) RETURNING id',
+          [googleId, email]
+        );
+        userId = newUserResult.rows[0].id;
+        console.log('New user created with ID:', userId);
+      } else {
+        // User exists
+        userId = userResult.rows[0].id;
       }
-    };
-    
-    // Sign JWT token
-    const token = jwt.sign(
-      jwtPayload,
-      process.env.JWT_SECRET,
-      { expiresIn: '1d' }
-    );
-    
-    // Redirect to frontend with token
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-    res.redirect(`${clientUrl}/auth/callback?token=${token}`);
-    
+      
+      // Create JWT payload
+      const jwtPayload = {
+        user: {
+          id: userId
+        }
+      };
+      
+      // Sign JWT token
+      const token = jwt.sign(
+        jwtPayload,
+        process.env.JWT_SECRET,
+        { expiresIn: '1d' }
+      );
+      
+      // Redirect to frontend with token
+      const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      res.redirect(`${clientUrl}/auth/callback?token=${token}`);
+      
+    } catch (err) {
+      console.error('User query error:', err.message);
+      res.status(500).json({ message: 'Server error' });
+    }
   } catch (err) {
     console.error('Google OAuth callback error:', err);
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';

@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Check if port 3001 is already in use
+if lsof -i:3001 -t >/dev/null ; then
+  echo "Port 3001 is already in use. Exiting to prevent crash-restart cycle."
+  exit 1
+fi
+
 # Set environment variables
 export PORT=3001
 export HOST=0.0.0.0
