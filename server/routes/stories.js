@@ -38,7 +38,7 @@ router.post('/generate', auth, async (req, res) => {
 
     const prompt = `Generate a Tadoku-style Japanese story at Tadoku Level ${tadoku_level}, using kanji up to WaniKani Level ${wanikani_level} and grammar up to Genki Chapter ${genki_chapter}. The story should be ${length}-length (${lengthMap[length]} characters), about ${topic}. Include furigana for the first occurrence of each kanji. Provide an English translation, a vocabulary list with definitions and example sentences, and a grammar breakdown referencing Genki chapters.
 
-The output format should be as follows:
+The output format should be as follows (make sure to include ALL sections and complete each section fully):
 ===TITLE-JP===
 [Japanese title]
 ===TITLE-EN===
@@ -50,14 +50,16 @@ The output format should be as follows:
 ===VOCABULARY===
 [List of key vocabulary with format: word (reading) - meaning - example]
 ===GRAMMAR===
-[List of grammar points with format: grammar point - explanation - Genki reference]`;
+[List of grammar points with format: grammar point - explanation - Genki reference (keep reference brief, max 50 chars)]
+
+Important: Make sure to complete all sections and maintain proper formatting throughout the response. Keep Genki references concise (e.g., "Chapter 3", "Ch. 3 - Particles", etc.).`;
 
     // Verify OpenAI API key is configured
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({ message: 'Server configuration error: OpenAI API key is missing' });
     }
 
-    // Call OpenAI API (ChatGPT 4o)
+    // Call OpenAI API
     try {
       console.log('Calling OpenAI API for story generation...');
       const startTime = Date.now();
@@ -69,56 +71,82 @@ The output format should be as follows:
           messages: [
             {
               role: 'system',
-              content: 'You are a Japanese language teacher specializing in creating graded readers.'
+              content: 'You are a Japanese language teacher specializing in creating graded readers. Always provide complete responses with all required sections. Never truncate or omit any sections.'
             },
             {
               role: 'user',
               content: prompt
             }
           ],
-          temperature: 0.7
+          temperature: 0.7,
+          max_tokens: 8000,
+          presence_penalty: 0.1,
+          frequency_penalty: 0.1,
+          top_p: 0.95,
+          stop: null
         },
         {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
           },
-          timeout: 60000 // Increased to 60 seconds for OpenAI requests
+          timeout: 120000 // 120 seconds
         }
       );
 
       const apiDuration = Date.now() - startTime;
       console.log(`OpenAI API responded in ${apiDuration}ms`);
+      
+      if (!openaiResponse.data || !openaiResponse.data.choices || !openaiResponse.data.choices[0]) {
+        console.error('Invalid OpenAI API response structure:', openaiResponse.data);
+        throw new Error('Invalid response from OpenAI API');
+      }
 
       // Parse response
       const responseText = openaiResponse.data.choices[0].message.content;
+      console.log('OpenAI raw response:', responseText);
       
       // Extract sections with proper error handling
-      let titleJP, titleEN, storyJP, storyEN, vocabularySection, grammarSection;
+      const sections = {
+        titleJP: responseText.match(/===TITLE-JP===\n([\s\S]*?)(?=\n===TITLE-EN===)/),
+        titleEN: responseText.match(/===TITLE-EN===\n([\s\S]*?)(?=\n===STORY-JP===)/),
+        storyJP: responseText.match(/===STORY-JP===\n([\s\S]*?)(?=\n===STORY-EN===)/),
+        storyEN: responseText.match(/===STORY-EN===\n([\s\S]*?)(?=\n===VOCABULARY===)/),
+        vocabulary: responseText.match(/===VOCABULARY===\n([\s\S]*?)(?=\n===GRAMMAR===)/),
+        grammar: responseText.match(/===GRAMMAR===\n([\s\S]*?)(?=$)/)
+      };
       
-      // Validate and extract sections from the response
-      const titleJPMatch = responseText.match(/===TITLE-JP===\n([\s\S]*?)(?=\n===TITLE-EN===)/);
-      const titleENMatch = responseText.match(/===TITLE-EN===\n([\s\S]*?)(?=\n===STORY-JP===)/);
-      const storyJPMatch = responseText.match(/===STORY-JP===\n([\s\S]*?)(?=\n===STORY-EN===)/);
-      const storyENMatch = responseText.match(/===STORY-EN===\n([\s\S]*?)(?=\n===VOCABULARY===)/);
-      const vocabularySectionMatch = responseText.match(/===VOCABULARY===\n([\s\S]*?)(?=\n===GRAMMAR===)/);
-      const grammarSectionMatch = responseText.match(/===GRAMMAR===\n([\s\S]*?)(?=$)/);
+      // Check for missing sections
+      const missingSections = Object.entries(sections)
+        .filter(([_, match]) => !match)
+        .map(([name]) => name.toUpperCase());
       
-      // Validate that all sections were found
-      if (!titleJPMatch || !titleENMatch || !storyJPMatch || !storyENMatch || !vocabularySectionMatch || !grammarSectionMatch) {
-        throw new Error("OpenAI response format is incomplete. Missing one or more required sections. Response: " + responseText.substring(0, 200));
+      if (missingSections.length > 0) {
+        console.error('Missing sections in OpenAI response:', missingSections);
+        console.error('Full response:', responseText);
+        throw new Error(`OpenAI response format is incomplete. Missing sections: ${missingSections.join(', ')}`);
       }
       
-      titleJP = titleJPMatch[1].trim();
-      titleEN = titleENMatch[1].trim();
-      storyJP = storyJPMatch[1].trim();
-      storyEN = storyENMatch[1].trim();
-      vocabularySection = vocabularySectionMatch[1].trim();
-      grammarSection = grammarSectionMatch[1].trim();
+      // Extract content from matches
+      titleJP = sections.titleJP[1].trim();
+      titleEN = sections.titleEN[1].trim();
+      storyJP = sections.storyJP[1].trim();
+      storyEN = sections.storyEN[1].trim();
+      vocabularySection = sections.vocabulary[1].trim();
+      grammarSection = sections.grammar[1].trim();
       
       // Validate content
-      if (!titleJP || !titleEN || !storyJP || !storyEN) {
-        throw new Error("OpenAI response contains empty title or story sections.");
+      const emptyFields = [];
+      if (!titleJP) emptyFields.push('Japanese title');
+      if (!titleEN) emptyFields.push('English title');
+      if (!storyJP) emptyFields.push('Japanese story');
+      if (!storyEN) emptyFields.push('English story');
+      if (!vocabularySection) emptyFields.push('Vocabulary section');
+      if (!grammarSection) emptyFields.push('Grammar section');
+      
+      if (emptyFields.length > 0) {
+        console.error('Empty fields in OpenAI response:', emptyFields);
+        throw new Error(`OpenAI response contains empty sections: ${emptyFields.join(', ')}`);
       }
 
       // Prepare content with title for storage
@@ -186,6 +214,9 @@ The output format should be as follows:
           if (match) {
             const [, grammarPoint, explanation, genkiRef] = match;
             
+            // Truncate genki_reference if it's too long (max 50 chars)
+            const truncatedGenkiRef = genkiRef.length > 50 ? genkiRef.substring(0, 47) + '...' : genkiRef;
+            
             // Check if grammar point exists
             const grammarResult = await client.query(
               'SELECT id FROM grammar WHERE grammar_point = $1',
@@ -200,7 +231,7 @@ The output format should be as follows:
                  (grammar_point, explanation, genki_reference) 
                  VALUES ($1, $2, $3) 
                  RETURNING id`,
-                [grammarPoint, explanation, genkiRef]
+                [grammarPoint, explanation, truncatedGenkiRef]
               );
               grammarId = newGrammarResult.rows[0].id;
             } else {
@@ -240,6 +271,41 @@ The output format should be as follows:
       }
     } catch (err) {
       console.error('Story generation error:', err.message);
+      
+      // Handle OpenAI API specific errors
+      if (err.response && err.response.data) {
+        console.error('OpenAI API error details:', err.response.data);
+        
+        if (err.response.status === 401) {
+          return res.status(500).json({ 
+            message: 'Server error', 
+            error: 'OpenAI API authentication failed. Please check API key configuration.' 
+          });
+        }
+        
+        if (err.response.status === 429) {
+          return res.status(500).json({ 
+            message: 'Server error', 
+            error: 'OpenAI API rate limit exceeded. Please try again later.' 
+          });
+        }
+        
+        if (err.response.data.error) {
+          return res.status(500).json({ 
+            message: 'Server error', 
+            error: `OpenAI API error: ${err.response.data.error.message || err.response.data.error}` 
+          });
+        }
+      }
+      
+      // Handle timeout errors
+      if (err.code === 'ECONNABORTED') {
+        return res.status(500).json({ 
+          message: 'Server error', 
+          error: 'Request timed out. Story generation is taking longer than expected.' 
+        });
+      }
+      
       res.status(500).json({ message: 'Server error', error: err.message });
     }
   } catch (err) {
