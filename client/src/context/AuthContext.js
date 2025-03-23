@@ -1,11 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import api from '../utils/api';
-
-// Configure axios with base URL
-const apiUrl = process.env.REACT_APP_API_URL || 'https://todakureader.com/api';
-axios.defaults.baseURL = apiUrl;
 
 // Create auth context
 export const AuthContext = createContext();
@@ -98,7 +93,7 @@ export const AuthProvider = ({ children }) => {
   // Logout
   const logout = () => {
     localStorage.removeItem('token');
-    delete axios.defaults.headers.common['x-auth-token'];
+    delete api.defaults.headers.common['x-auth-token'];
     setUser(null);
     setIsAuthenticated(false);
     logDebug('User logged out');

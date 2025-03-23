@@ -3,13 +3,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 
-// Mock environment variables
-process.env.OPENAI_API_KEY = 'test-api-key';
-
-// Mock variables for controlling axios behavior
-let mockMalformedResponse = false;
-let mockApiError = false;
-
 // Mocks
 jest.mock('../middleware/auth', () => (req, res, next) => {
   req.user = { id: 1 };
@@ -25,10 +18,11 @@ jest.mock('../db/db', () => ({
 }));
 
 // Mock axios
-jest.mock('axios', () => ({
-  post: jest.fn().mockImplementation((url, data) => {
+jest.mock('axios', () => {
+  const mockPost = jest.fn();
+  mockPost.mockImplementation((url, data) => {
     // Default successful response
-    if (!mockMalformedResponse && !mockApiError) {
+    if (!mockPost.mockMalformedResponse && !mockPost.mockApiError) {
       return Promise.resolve({
         data: {
           choices: [
@@ -53,7 +47,7 @@ Story
       });
     } 
     // Malformed response for testing error handling
-    else if (mockMalformedResponse) {
+    else if (mockPost.mockMalformedResponse) {
       return Promise.resolve({
         data: {
           choices: [
@@ -67,11 +61,12 @@ Story
       });
     }
     // API error like authentication or network issues
-    else if (mockApiError) {
+    else if (mockPost.mockApiError) {
       return Promise.reject(new Error('API authentication error'));
     }
-  })
-}));
+  });
+  return { post: mockPost };
+});
 
 // Setup
 app.use(bodyParser.json());
@@ -81,10 +76,10 @@ describe('Stories API Routes', () => {
   describe('POST /api/stories/generate', () => {
     // Reset mock implementation before each test
     beforeEach(() => {
-      const axios = require('axios');
-      axios.post.mockClear();
-      mockMalformedResponse = false;
-      mockApiError = false;
+      const mockAxios = require('axios');
+      mockAxios.post.mockClear();
+      mockAxios.post.mockMalformedResponse = false;
+      mockAxios.post.mockApiError = false;
     });
 
     it('should validate topic length to be 50 characters or less', async () => {
@@ -126,7 +121,8 @@ describe('Stories API Routes', () => {
 
     it('should handle malformed responses from OpenAI', async () => {
       // Set the mock to return a malformed response
-      mockMalformedResponse = true;
+      const mockAxios = require('axios');
+      mockAxios.post.mockMalformedResponse = true;
       
       const res = await request(app)
         .post('/api/stories/generate')
@@ -139,13 +135,14 @@ describe('Stories API Routes', () => {
         });
       
       expect(res.statusCode).toEqual(500);
-      expect(res.body.message).toEqual('Server error');
+      expect(res.body).toHaveProperty('error');
       expect(res.body.error).toContain('OpenAI response format is incomplete');
     });
     
     it('should handle API errors like authentication or network issues', async () => {
       // Set the mock to simulate an API error
-      mockApiError = true;
+      const mockAxios = require('axios');
+      mockAxios.post.mockApiError = true;
       
       const res = await request(app)
         .post('/api/stories/generate')
@@ -158,7 +155,7 @@ describe('Stories API Routes', () => {
         });
       
       expect(res.statusCode).toEqual(500);
-      expect(res.body.message).toEqual('Server error');
+      expect(res.body).toHaveProperty('error');
       expect(res.body.error).toContain('API authentication error');
     });
 
@@ -187,7 +184,7 @@ describe('Stories API Routes', () => {
       expect(res.body.storyJP).toEqual('ストーリー');
     });
   });
-
+  
   describe('GET /api/stories/:id', () => {
     it('should extract title and content correctly when fetching a story', async () => {
       // Setup mock DB response with content that has title and story

@@ -18,74 +18,74 @@ jest.mock('../../utils/mockData', () => ({
 // Define a simple theme for testing
 const theme = {
   primary: '#4A90E2',
-  secondary: '#6FCF97',
+  secondary: '#4CAF50',
   background: '#FFFFFF',
-  surface: '#F5F7FA',
+  surface: '#F5F5F5',
   text: '#333333',
   textSecondary: '#666666',
-  error: '#EB5757',
-  border: '#E0E0E0',
+  border: '#DDDDDD',
   shadow: 'rgba(0, 0, 0, 0.1)',
-  success: '#27AE60',
-  warning: '#F2C94C',
-  furigana: '#888888',
-  primaryLight: '#E6F0FF',
-  secondaryLight: '#E6F7EF'
+  primaryLight: '#E3F2FD'
+};
+
+// Mock auth context
+const mockAuthContext = {
+  isAuthenticated: false,
+  user: null,
+  loading: false
 };
 
 describe('Stories Component Simple Tests', () => {
-  // Setup auth context mock
-  const mockAuthContext = {
-    isAuthenticated: false,
-    isLoading: false,
-    user: null
-  };
-  
   beforeEach(() => {
+    // Reset all mocks before each test
     jest.clearAllMocks();
-    
-    // Mock API response
+
+    // Mock the API calls
     api.get.mockResolvedValue({
       data: {
         stories: [
           {
             id: 1,
-            title_jp: 'テスト',
-            title_en: 'Test',
-            content_jp: 'これはテストです。',
-            content_en: 'This is a test.',
-            tadoku_level: 1
+            title_jp: 'Test Story',
+            title_en: 'Test Story',
+            content_jp: 'Test content',
+            content_en: 'Test content',
+            level: 'N5',
+            type: 'public'
           }
         ],
         pagination: {
           total: 1,
           limit: 10,
-          offset: 0
+          offset: 0,
+          hasMore: false
         }
       }
     });
-    
-    // Mock getMockStoriesData
+
+    // Mock the getMockStoriesData function
     getMockStoriesData.mockResolvedValue({
       stories: [
         {
-          id: 'mock-1',
-          title_jp: 'モックデータ',
-          title_en: 'Mock Data',
-          content_jp: 'これはモックデータです。',
-          content_en: 'This is mock data.',
-          tadoku_level: 1
+          id: 1,
+          title_jp: 'Test Story',
+          title_en: 'Test Story',
+          content_jp: 'Test content',
+          content_en: 'Test content',
+          level: 'N5',
+          type: 'public'
         }
       ],
       pagination: {
         total: 1,
         limit: 10,
-        offset: 0
+        offset: 0,
+        hasMore: false
       }
     });
   });
-  
-  test('renders without crashing', async () => {
+
+  it('renders without crashing', async () => {
     render(
       <MemoryRouter>
         <ThemeProvider theme={theme}>
@@ -98,7 +98,11 @@ describe('Stories Component Simple Tests', () => {
     
     // Wait for the welcome message which is specific to non-authenticated users
     await waitFor(() => {
-      expect(screen.getByText('Welcome to Todaku Reader!')).toBeInTheDocument();
+      expect(screen.getByText('Welcome to Stories!')).toBeInTheDocument();
+    });
+    
+    await waitFor(() => {
+      expect(screen.getByText('Sign in to create and manage your own stories.')).toBeInTheDocument();
     });
     
     // Check for the filter section

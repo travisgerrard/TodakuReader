@@ -3,8 +3,17 @@ const cors = require('cors');
 const path = require('path');
 const dotenv = require('dotenv');
 
-// Load environment variables from the root .env file
-dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
+// Load environment variables from the server's .env file
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
+// Log environment variables (excluding sensitive data)
+console.log('Environment Configuration:');
+console.log('- NODE_ENV:', process.env.NODE_ENV);
+console.log('- PORT:', process.env.PORT);
+console.log('- DB_NAME:', process.env.DB_NAME);
+console.log('- GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? '✓ Present' : '✗ Missing');
+console.log('- GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? '✓ Present' : '✗ Missing');
+console.log('- JWT_SECRET:', process.env.JWT_SECRET ? '✓ Present' : '✗ Missing');
 
 // Now require the db module after environment variables are loaded
 const db = require('./db/db');
@@ -34,8 +43,11 @@ app.get('/api/healthcheck', (req, res) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5001', 'https://todakureader.com', 'https://www.todakureader.com'],
-  credentials: true
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5001', 'https://todakureader.com', 'https://www.todakureader.com'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
+  exposedHeaders: ['x-auth-token']
 }));
 
 // Add error handling middleware for database errors

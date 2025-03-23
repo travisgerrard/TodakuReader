@@ -134,7 +134,12 @@ const LoginPage = () => {
   
   // Function to handle server-side Google login
   const handleServerSideGoogleLogin = () => {
-    window.location.href = `${process.env.REACT_APP_API_URL || 'https://todakureader.com/api'}/auth/google/redirect`;
+    const apiUrl = process.env.REACT_APP_API_URL;
+    if (!apiUrl) {
+      console.error('API URL not configured');
+      return;
+    }
+    window.location.href = `${apiUrl}/auth/google/redirect`;
   };
   
   return (

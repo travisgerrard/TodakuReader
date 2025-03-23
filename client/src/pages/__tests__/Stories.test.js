@@ -1,9 +1,9 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import { ThemeProvider } from '../../context/ThemeContext';
+import { MemoryRouter } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import Stories from '../Stories';
+import { ThemeProvider } from 'styled-components';
+import Stories from '../../pages/Stories';
 import api from '../../utils/api';
 import { getMockStoriesData } from '../../utils/mockData';
 
@@ -14,6 +14,24 @@ jest.mock('../../utils/api');
 jest.mock('../../utils/mockData', () => ({
   getMockStoriesData: jest.fn()
 }));
+
+// Define a simple theme for testing
+const theme = {
+  primary: '#4A90E2',
+  secondary: '#6FCF97',
+  background: '#FFFFFF',
+  surface: '#F5F7FA',
+  text: '#333333',
+  textSecondary: '#666666',
+  error: '#EB5757',
+  border: '#E0E0E0',
+  shadow: 'rgba(0, 0, 0, 0.1)',
+  success: '#27AE60',
+  warning: '#F2C94C',
+  furigana: '#888888',
+  primaryLight: '#E6F0FF',
+  secondaryLight: '#E6F7EF'
+};
 
 describe('Stories Component', () => {
   // Setup auth context mock
@@ -43,13 +61,13 @@ describe('Stories Component', () => {
   // Create a wrapper component to avoid router issues
   const renderComponent = (authContext = mockAuthContext) => {
     return render(
-      <BrowserRouter>
-        <ThemeProvider>
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
           <AuthContext.Provider value={authContext}>
             <Stories />
           </AuthContext.Provider>
-        </ThemeProvider>
-      </BrowserRouter>
+        </MemoryRouter>
+      </ThemeProvider>
     );
   };
 
@@ -61,7 +79,7 @@ describe('Stories Component', () => {
       title_en: 'Title 1',
       content_jp: 'タイトル1\n\n日本語のストーリー1',
       content_en: 'Title 1\n\nEnglish story content 1',
-      tadoku_level: 2,
+      level: 'N5',
       wanikani_max_level: 15,
       genki_max_chapter: 8,
       topic: 'Test Topic',
@@ -73,22 +91,47 @@ describe('Stories Component', () => {
       title_en: 'Title 2',
       content_jp: 'タイトル2\n\n日本語のストーリー2',
       content_en: 'Title 2\n\nEnglish story content 2',
-      tadoku_level: 3,
-      wanikani_max_level: 20,
-      genki_max_chapter: 10,
-      topic: 'Another Topic',
-      upvotes: 10
+      level: 'N4',
+      wanikani_max_level: 15,
+      genki_max_chapter: 8,
+      topic: 'Test Topic',
+      upvotes: 5
     }
   ];
 
   // Test for non-authenticated users seeing stories
   test('should display stories for non-authenticated users', async () => {
-    // Mock successful API response
+    // Set up successful response
     api.get.mockResolvedValueOnce({
       data: {
-        stories: sampleStories,
+        stories: [
+          {
+            id: 1,
+            title_jp: 'タイトル1',
+            title_en: 'Title 1',
+            content_jp: 'タイトル1\n\n日本語のストーリー1',
+            content_en: 'Title 1\n\nEnglish story content 1',
+            level: 'N5',
+            wanikani_max_level: 15,
+            genki_max_chapter: 8,
+            topic: 'Test Topic',
+            upvotes: 5
+          },
+          {
+            id: 2,
+            title_jp: 'タイトル2',
+            title_en: 'Title 2',
+            content_jp: 'タイトル2\n\n日本語のストーリー2',
+            content_en: 'Title 2\n\nEnglish story content 2',
+            level: 'N4',
+            wanikani_max_level: 15,
+            genki_max_chapter: 8,
+            topic: 'Test Topic',
+            upvotes: 5
+          }
+        ],
         pagination: {
-          total: sampleStories.length,
+          total: 2,
           limit: 10,
           offset: 0,
           hasMore: false
@@ -99,7 +142,8 @@ describe('Stories Component', () => {
     renderComponent();
 
     // Check for welcome message for non-authenticated users
-    expect(await screen.findByText('Welcome to Todaku Reader!')).toBeInTheDocument();
+    expect(await screen.findByText('Welcome to Stories!')).toBeInTheDocument();
+    expect(screen.getByText('Sign in to create and manage your own stories.')).toBeInTheDocument();
 
     // Verify stories are loaded - split assertions
     await waitFor(() => {
@@ -128,7 +172,7 @@ describe('Stories Component', () => {
           title_en: 'My Cat',
           content_jp: '私の猫\n\n猫の内容',
           content_en: 'My Cat\n\nCat content',
-          tadoku_level: 1,
+          level: 'N1',
           wanikani_max_level: 10,
           genki_max_chapter: 5,
           topic: 'Daily Life',
@@ -230,9 +274,9 @@ describe('Stories Component', () => {
       expect(screen.getByText('タイトル2')).toBeInTheDocument();
     });
 
-    // Change Tadoku Level filter
-    const levelSelect = screen.getByLabelText('Tadoku Level');
-    fireEvent.change(levelSelect, { target: { value: '2' } });
+    // Change Level filter
+    const levelSelect = screen.getByLabelText('Level');
+    fireEvent.change(levelSelect, { target: { value: 'N5' } });
 
     // Wait for filtered stories to check presence and absence
     await waitFor(() => {
@@ -262,9 +306,9 @@ describe('Stories Component', () => {
     renderComponent();
 
     // Check for no results message
-    expect(await screen.findByText('No stories found')).toBeInTheDocument();
+    expect(await screen.findByText('No stories found matching your criteria.')).toBeInTheDocument();
     
     // Non-authenticated message should show login option
-    expect(screen.getByText('Sign in to create your own stories')).toBeInTheDocument();
+    expect(screen.getByText('Sign in to create and manage your own stories')).toBeInTheDocument();
   });
 }); 

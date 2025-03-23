@@ -56,7 +56,10 @@ Important: Make sure to complete all sections and maintain proper formatting thr
 
     // Verify OpenAI API key is configured
     if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ message: 'Server configuration error: OpenAI API key is missing' });
+      return res.status(500).json({ 
+        message: 'Server error',
+        error: 'OpenAI API key is missing'
+      });
     }
 
     // Call OpenAI API
@@ -124,7 +127,10 @@ Important: Make sure to complete all sections and maintain proper formatting thr
       if (missingSections.length > 0) {
         console.error('Missing sections in OpenAI response:', missingSections);
         console.error('Full response:', responseText);
-        throw new Error(`OpenAI response format is incomplete. Missing sections: ${missingSections.join(', ')}`);
+        return res.status(500).json({
+          message: 'Server error',
+          error: 'OpenAI response format is incomplete'
+        });
       }
       
       // Extract content from matches
@@ -279,7 +285,7 @@ Important: Make sure to complete all sections and maintain proper formatting thr
         if (err.response.status === 401) {
           return res.status(500).json({ 
             message: 'Server error', 
-            error: 'OpenAI API authentication failed. Please check API key configuration.' 
+            error: 'API authentication error' 
           });
         }
         
@@ -306,7 +312,10 @@ Important: Make sure to complete all sections and maintain proper formatting thr
         });
       }
       
-      res.status(500).json({ message: 'Server error', error: err.message });
+      return res.status(500).json({ 
+        message: 'Server error', 
+        error: err.message 
+      });
     }
   } catch (err) {
     console.error('Story generation error:', err.message);

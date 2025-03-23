@@ -6,6 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import api from '../utils/api';
 import { getMockStoriesData } from '../utils/mockData';
 
+// Styled components
 const PageHeader = styled.div`
   margin-bottom: 2rem;
 `;
@@ -169,6 +170,7 @@ const CreateButton = styled(Link)`
   &:hover {
     background-color: ${({ theme }) => theme.secondary}DD;
     text-decoration: none;
+    color: white;
   }
 `;
 
@@ -194,6 +196,7 @@ const StoryCard = styled(Link)`
   &:hover {
     transform: translateY(-5px);
     text-decoration: none;
+    color: ${({ theme }) => theme.text};
   }
 `;
 
@@ -212,6 +215,7 @@ const StoryPreview = styled.div`
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  white-space: pre-wrap;
 `;
 
 const StoryMeta = styled.div`
@@ -265,321 +269,272 @@ const NoResults = styled.div`
   border-radius: 8px;
 `;
 
-const Stories = () => {
+const ErrorMessage = styled.div`
+  background-color: ${({ theme }) => theme.surface};
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  color: ${({ theme }) => theme.error};
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-start;
+`;
+
+// Define the Stories component
+function Stories() {
   const { isAuthenticated, user } = useContext(AuthContext);
-  
-  // State for stories and pagination
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [totalStories, setTotalStories] = useState(0);
-  const [pagination, setPagination] = useState({
-    limit: 10,
-    offset: 0
-  });
-  
-  // Add state for fallback mode
-  const [usingFallbackData, setUsingFallbackData] = useState(false);
-  
-  // State for filters
   const [filters, setFilters] = useState({
-    tadoku_level: '',
-    wanikani_level: '',
-    genki_chapter: '',
-    length: '',
-    topic: '',
+    search: '',
     level: '',
-    search: ''
+    chapter: '',
+    type: 'all'
   });
+  const [pagination, setPagination] = useState({
+    total: 0,
+    limit: 10,
+    offset: 0,
+    hasMore: false
+  });
+  const [usingSampleData, setUsingSampleData] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   
-  // Load stories with current filters and pagination
   const fetchStories = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    
-    // Build query parameters
-    const params = new URLSearchParams();
-    params.append('limit', pagination.limit);
-    params.append('offset', pagination.offset);
-    
-    // Add filters if they are set
-    if (filters.tadoku_level) params.append('tadoku_level', filters.tadoku_level);
-    if (filters.wanikani_level) params.append('wanikani_level', filters.wanikani_level);
-    if (filters.genki_chapter) params.append('genki_chapter', filters.genki_chapter);
-    if (filters.length) params.append('length', filters.length);
-    if (filters.topic) params.append('topic', filters.topic);
-    
     try {
-      const res = await api.get(`/stories?${params.toString()}`);
-      
-      if (res.data && Array.isArray(res.data.stories)) {
-        // Reset fallback mode if we get real data
-        setUsingFallbackData(false);
-        setStories(res.data.stories);
-        setTotalStories(res.data.pagination?.total || res.data.stories.length);
-      } else {
-        console.error('Unexpected API response format:', res.data);
-        // Use fallback data
-        loadFallbackData();
-      }
+      setLoading(true);
+      const params = new URLSearchParams({
+        offset: pagination.offset,
+        limit: pagination.limit,
+        ...filters
+      });
+      const response = await api.get(`/stories?${params.toString()}`);
+      setStories(response.data.stories);
+      setTotalStories(response.data.total);
+      setPagination(prev => ({
+        ...prev,
+        total: response.data.total,
+        hasMore: response.data.hasMore
+      }));
+      setError(null);
     } catch (err) {
       console.error('Error fetching stories:', err);
-      // Use fallback data
-      loadFallbackData();
+      
+      // Try to use fallback data
+      try {
+        const mockData = await getMockStoriesData();
+        setStories(mockData.stories);
+        setTotalStories(mockData.total);
+        setPagination(prev => ({
+          ...prev,
+          total: mockData.total,
+          hasMore: mockData.hasMore
+        }));
+        setUsingSampleData(true);
+      } catch (mockErr) {
+        console.error('Error fetching mock data:', mockErr);
+      }
     } finally {
       setLoading(false);
     }
-  }, [filters, pagination.limit, pagination.offset]);
+  }, [pagination.offset, pagination.limit, filters]);
   
-  // Load fallback mock data
-  const loadFallbackData = useCallback(async () => {
-    try {
-      // Pass all filters to the mock data function
-      const mockData = await getMockStoriesData({
-        limit: pagination.limit,
-        offset: pagination.offset,
-        tadoku_level: filters.tadoku_level,
-        wanikani_level: filters.wanikani_level,
-        genki_chapter: filters.genki_chapter,
-        length: filters.length,
-        topic: filters.topic,
-        search: filters.search
-      });
-      
-      setUsingFallbackData(true);
-      setStories(mockData.stories);
-      setTotalStories(mockData.pagination.total);
-      setError(null);
-    } catch (err) {
-      console.error('Error loading fallback data:', err);
-      setError('Failed to load stories. Please try again later.');
-      setStories([]);
-      setTotalStories(0);
-    }
-  }, [pagination.limit, pagination.offset, filters]);
-  
-  // Fetch stories when component mounts or when filters/pagination change
   useEffect(() => {
     fetchStories();
   }, [fetchStories]);
   
-  // Handle filter changes
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
-    
-    // Reset to first page when filters change
-    setPagination(prev => ({ ...prev, offset: 0 }));
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    setPagination(prev => ({
+      ...prev,
+      offset: 0
+    }));
   };
   
-  // Reset all filters
-  const handleResetFilters = () => {
+  const clearFilters = () => {
     setFilters({
-      tadoku_level: '',
-      wanikani_level: '',
-      genki_chapter: '',
-      length: '',
-      topic: '',
+      search: '',
       level: '',
-      search: ''
+      chapter: '',
+      type: 'all'
     });
-    
-    setPagination(prev => ({ ...prev, offset: 0 }));
+    setPagination(prev => ({
+      ...prev,
+      offset: 0
+    }));
   };
   
-  // Handle pagination
-  const handlePageChange = (offset) => {
-    setPagination(prev => ({ ...prev, offset }));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handlePageChange = (newOffset) => {
+    setPagination(prev => ({
+      ...prev,
+      offset: newOffset
+    }));
   };
   
-  // Calculate total pages
-  const totalPages = Math.ceil(totalStories / pagination.limit);
   const currentPage = Math.floor(pagination.offset / pagination.limit) + 1;
+  const totalPages = Math.ceil(totalStories / pagination.limit);
   
-  // Generate page numbers
-  const pageNumbers = [];
-  const maxVisiblePages = 5;
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    const halfVisible = Math.floor(maxVisiblePages / 2);
+    
+    let startPage = Math.max(currentPage - halfVisible, 1);
+    let endPage = Math.min(startPage + maxVisiblePages - 1, totalPages);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(endPage - maxVisiblePages + 1, 1);
+    }
+    
+    if (startPage > 1) {
+      pages.push(1);
+      if (startPage > 2) pages.push('...');
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) pages.push('...');
+      pages.push(totalPages);
+    }
+    
+    return pages;
+  };
   
-  if (totalPages <= maxVisiblePages) {
-    for (let i = 1; i <= totalPages; i++) {
-      pageNumbers.push(i);
-    }
-  } else {
-    // Always show first page
-    pageNumbers.push(1);
-    
-    // Calculate start and end of visible pages
-    let start = Math.max(2, currentPage - 1);
-    let end = Math.min(start + 2, totalPages - 1);
-    
-    // Adjust start if end is maxed out
-    if (end === totalPages - 1) {
-      start = Math.max(2, end - 2);
-    }
-    
-    // Add ellipsis if needed
-    if (start > 2) {
-      pageNumbers.push('...');
-    }
-    
-    // Add page numbers
-    for (let i = start; i <= end; i++) {
-      pageNumbers.push(i);
-    }
-    
-    // Add ellipsis if needed
-    if (end < totalPages - 1) {
-      pageNumbers.push('...');
-    }
-    
-    // Always show last page
-    pageNumbers.push(totalPages);
-  }
+  const pageNumbers = getPageNumbers();
+  
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    fetchStories();
+  };
   
   return (
     <Container>
       <PageHeader>
-        <Title>Browse Japanese Stories</Title>
-        
+        <Title>Stories</Title>
+        {isAuthenticated && (
+          <CreateButton to="/stories/new">Create a New Story</CreateButton>
+        )}
+      </PageHeader>
+      
+      {!isAuthenticated && (
         <WelcomeMessage>
           <WelcomeText>
-            <h3>{isAuthenticated ? `Welcome back, ${user?.name || 'Reader'}!` : 'Welcome to Todaku Reader!'}</h3>
-            <p>
-              {isAuthenticated 
-                ? 'Continue your Japanese reading journey with our collection of stories.'
-                : 'Explore our collection of Japanese stories to improve your reading skills. All stories are freely accessible!'}
-            </p>
-            {usingFallbackData && (
-              <p style={{ color: '#ff9800', marginTop: '0.5rem' }}>
-                <strong>Note:</strong> Currently showing offline stories. Some features may be limited.
-              </p>
-            )}
+            <h3>Welcome to Stories!</h3>
+            <p>Sign in to create and manage your own stories.</p>
           </WelcomeText>
-          
-          {isAuthenticated && (
-            <ActionButton to="/stories/new">Create New Story</ActionButton>
-          )}
+          <ActionButton to="/auth">Sign In</ActionButton>
         </WelcomeMessage>
-      </PageHeader>
+      )}
       
       <FiltersContainer>
         <FiltersTitle>Filter Stories</FiltersTitle>
         
         <FiltersGrid>
           <FilterGroup>
-            <Label htmlFor="tadoku_level">Tadoku Level</Label>
-            <Select
-              id="tadoku_level"
-              name="tadoku_level"
-              value={filters.tadoku_level}
-              onChange={handleFilterChange}
-            >
-              <option value="">Any Level</option>
-              <option value="1">Level 1 (Beginner)</option>
-              <option value="2">Level 2</option>
-              <option value="3">Level 3</option>
-              <option value="4">Level 4</option>
-              <option value="5">Level 5 (Advanced)</option>
-            </Select>
-          </FilterGroup>
-          
-          <FilterGroup>
-            <Label htmlFor="wanikani_level">Max WaniKani Level</Label>
-            <Input
-              type="number"
-              id="wanikani_level"
-              name="wanikani_level"
-              min="1"
-              max="60"
-              placeholder="Any"
-              value={filters.wanikani_level}
-              onChange={handleFilterChange}
-            />
-          </FilterGroup>
-          
-          <FilterGroup>
-            <Label htmlFor="genki_chapter">Max Genki Chapter</Label>
-            <Input
-              type="number"
-              id="genki_chapter"
-              name="genki_chapter"
-              min="1"
-              max="23"
-              placeholder="Any"
-              value={filters.genki_chapter}
-              onChange={handleFilterChange}
-            />
-          </FilterGroup>
-          
-          <FilterGroup>
-            <Label htmlFor="length">Story Length</Label>
-            <Select
-              id="length"
-              name="length"
-              value={filters.length}
-              onChange={handleFilterChange}
-            >
-              <option value="">Any Length</option>
-              <option value="short">Short</option>
-              <option value="medium">Medium</option>
-              <option value="long">Long</option>
-            </Select>
-          </FilterGroup>
-          
-          <FilterGroup>
-            <Label htmlFor="topic">Topic</Label>
+            <Label htmlFor="search">Search</Label>
             <Input
               type="text"
-              id="topic"
-              name="topic"
-              placeholder="Any topic"
-              value={filters.topic}
+              id="search"
+              name="search"
+              value={filters.search}
               onChange={handleFilterChange}
+              placeholder="Search stories..."
             />
+          </FilterGroup>
+          
+          <FilterGroup>
+            <Label htmlFor="level">Level</Label>
+            <Select
+              id="level"
+              name="level"
+              value={filters.level}
+              onChange={handleFilterChange}
+            >
+              <option value="">All Levels</option>
+              <option value="N5">N5</option>
+              <option value="N4">N4</option>
+              <option value="N3">N3</option>
+              <option value="N2">N2</option>
+              <option value="N1">N1</option>
+            </Select>
+          </FilterGroup>
+          
+          <FilterGroup>
+            <Label htmlFor="chapter">Chapter</Label>
+            <Select
+              id="chapter"
+              name="chapter"
+              value={filters.chapter}
+              onChange={handleFilterChange}
+            >
+              <option value="">All Chapters</option>
+              {[...Array(10)].map((_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  Chapter {i + 1}
+                </option>
+              ))}
+            </Select>
+          </FilterGroup>
+          
+          <FilterGroup>
+            <Label htmlFor="type">Type</Label>
+            <Select
+              id="type"
+              name="type"
+              value={filters.type}
+              onChange={handleFilterChange}
+            >
+              <option value="all">All Types</option>
+              <option value="public">Public</option>
+              {isAuthenticated && (
+                <>
+                  <option value="private">Private</option>
+                  <option value="my">My Stories</option>
+                </>
+              )}
+            </Select>
           </FilterGroup>
         </FiltersGrid>
         
         <ButtonGroup>
           <Button onClick={fetchStories}>Apply Filters</Button>
-          <ClearButton onClick={handleResetFilters}>Clear Filters</ClearButton>
+          <ClearButton onClick={clearFilters}>Clear Filters</ClearButton>
         </ButtonGroup>
       </FiltersContainer>
       
       {loading ? (
         <LoadingIndicator>Loading stories...</LoadingIndicator>
       ) : error ? (
-        <NoResults>
-          <h3>Error Loading Stories</h3>
-          <p>{error}</p>
-          <p>Please try refreshing the page or check your connection.</p>
-        </NoResults>
+        <ErrorMessage>
+          <div>Using Sample Stories</div>
+          <Button onClick={handleRetry}>Try Again</Button>
+        </ErrorMessage>
       ) : stories.length === 0 ? (
-        <NoResults>
-          <h3>No stories found</h3>
-          <p>Try adjusting your filters or check back later for new content.</p>
-          {isAuthenticated && (
-            <p>
-              <Link to="/stories/new">Create a new story</Link> to contribute to our collection!
-            </p>
-          )}
-        </NoResults>
+        <NoResults>No stories found matching your criteria.</NoResults>
       ) : (
         <>
           <StoriesList>
             {stories.map(story => (
               <StoryCard key={story.id} to={`/stories/${story.id}`}>
-                <StoryTitle>
-                  {story.title_jp || story.content_jp.split('\n')[0]}
-                </StoryTitle>
+                <StoryTitle>{story.title_jp}</StoryTitle>
+                <StoryTitle>{story.title_en}</StoryTitle>
                 <StoryPreview>
-                  {story.title_en || story.content_en.split('\n')[0]}
+                  {story.content_jp}
+                  {story.content_en && `\n\n${story.content_en}`}
                 </StoryPreview>
                 <StoryMeta>
-                  <StoryMetaItem>Tadoku: {story.tadoku_level}</StoryMetaItem>
-                  <StoryMetaItem>WK: ≤{story.wanikani_max_level}</StoryMetaItem>
-                  <StoryMetaItem>GK: ≤{story.genki_max_chapter}</StoryMetaItem>
-                  <StoryMetaItem>↑ {story.upvotes}</StoryMetaItem>
+                  <StoryMetaItem>Level: {story.level}</StoryMetaItem>
+                  <StoryMetaItem>Chapter: {story.genki_max_chapter}</StoryMetaItem>
                 </StoryMeta>
               </StoryCard>
             ))}
@@ -596,7 +551,7 @@ const Stories = () => {
               
               <PageButton
                 disabled={currentPage === 1}
-                onClick={() => handlePageChange(Math.max(0, pagination.offset - pagination.limit))}
+                onClick={() => handlePageChange(pagination.offset - pagination.limit)}
               >
                 Prev
               </PageButton>
@@ -634,6 +589,6 @@ const Stories = () => {
       )}
     </Container>
   );
-};
+}
 
-export default Stories; 
+export default Stories;
